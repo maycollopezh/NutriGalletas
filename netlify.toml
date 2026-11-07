@@ -1,0 +1,17 @@
+[build]
+  # HTML, CSS y JavaScript sin compilación. No requiere instalar dependencias.
+  command = "node scripts/build.mjs"
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/src/config.js"
+  [headers.values]
+    Cache-Control = "no-store"

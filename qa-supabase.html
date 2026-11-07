@@ -1,0 +1,52 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>NutriGalletas · Verificación local</title><style>body{font:17px system-ui;max-width:1000px;margin:45px auto;color:#183c30}button{padding:15px;background:#214f40;color:white;border:0;border-radius:8px}pre{white-space:pre-wrap;background:#f4f6f3;padding:25px}p{line-height:1.6}</style><h1>Verificación local de Supabase</h1><p>Usa la sesión de administrador existente. Crea un producto ficticio de prueba con una unidad, compra y venta por Bs 0,01; al terminar desactiva el producto. Los registros se conservan como evidencia académica. No cambia las contraseñas ni los perfiles del equipo.</p><button id="run">Ejecutar pruebas</button><pre id="out">Listo para comprobar sesión, ventas simultáneas, eventos y bloqueo.</pre><script type="module">
+import {config} from './src/config.js';
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+const out=document.querySelector('#out');const button=document.querySelector('#run');
+const results=[];function log(test,ok,detail){results.push({test,ok,detail});out.textContent=JSON.stringify(results,null,2)}
+function check(r){if(r.error)throw new Error(r.error.message);return r.data}
+const a=createClient(config.supabaseUrl,config.supabasePublishableKey);
+const b=createClient(config.supabaseUrl,config.supabasePublishableKey,{auth:{autoRefreshToken:false}});
+button.onclick=async()=>{button.disabled=true;out.textContent='Ejecutando…';let fixture;let channels=[];
+try{
+const u=check(await a.auth.getUser());if(!u?.user)throw new Error('Inicia sesión como administrador en la página principal de este mismo navegador.');
+const role=check(await a.rpc('rol_actual'));if(role!=='administrador')throw new Error('Se necesita la sesión del administrador.');
+log('Sesión de administrador',true,'Sesión existente verificada por Auth y rol_actual.');
+check(await b.auth.getUser());
+const cat=check(await a.from('categorias_productos').select('id').eq('activo',true).limit(1))[0];
+const prov=check(await a.from('proveedores').select('id').eq('activo',true).limit(1))[0];
+const tag=Date.now().toString();
+fixture=check(await a.from('productos').insert({categoria_id:cat.id,codigo:'QA-'+tag,nombre:'PRUEBA CONCURRENCIA '+tag,presentacion:'Unidad ficticia de verificación',precio_venta:0.01,stock_minimo:0}).select().single());
+log('Producto exclusivo de prueba',true,fixture.codigo);
+let resolveEvent;const event=new Promise(resolve=>resolveEvent=resolve);let timer;
+const channel=b.channel('qa-'+tag).on('postgres_changes',{event:'UPDATE',schema:'public',table:'productos',filter:'id=eq.'+fixture.id},payload=>{if(payload.new.nombre===fixture.nombre+' ACTUALIZADO')resolveEvent(true)});channels.push(channel);
+try{
+await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(new Error('Tiempo agotado al suscribir Realtime')),15000);channel.subscribe(status=>{if(status==='SUBSCRIBED'){clearTimeout(t);resolve()}if(status==='CHANNEL_ERROR'){clearTimeout(t);reject(new Error('Error de canal Realtime'))}})});
+check(await a.from('productos').update({nombre:fixture.nombre+' ACTUALIZADO'}).eq('id',fixture.id));
+const received=await Promise.race([event,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),12000)})]);clearTimeout(timer);
+log('Realtime entre dos conexiones de administrador',received,received?'Conexión B recibió el cambio guardado por A.':'No se recibió el evento dentro del plazo.');
+}catch(e){log('Realtime entre dos conexiones de administrador',false,e.message)}
+const expiry=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+const input={producto_id:fixture.id,proveedor_id:prov.id,cantidad:1,costo_unitario:0.01,fecha_vencimiento:expiry,codigo_lote:'QA-'+tag,observacion:'Prueba académica de concurrencia: una unidad y dos ventas simultáneas.'};
+check(await a.rpc('registrar_compra',{p_datos:input}));
+const duplicate=await a.rpc('registrar_compra',{p_datos:input});
+log('Lote duplicado rechazado',!!duplicate.error,duplicate.error?.message||'No rechazado');
+const args={p_items:[{producto_id:fixture.id,cantidad:1}],p_metodo_pago:'efectivo'};
+const sales=await Promise.all([a.rpc('registrar_venta',args),b.rpc('registrar_venta',args)]);
+const successes=sales.filter(x=>!x.error).length;
+log('Dos ventas simultáneas sobre una unidad',successes===1,sales.map(x=>x.error?x.error.message:'Venta registrada').join(' | '));
+const lots=check(await a.from('lotes_inventario').select('cantidad_disponible').eq('producto_id',fixture.id));
+log('Stock final sin saldo negativo',lots.reduce((n,l)=>n+l.cantidad_disponible,0)===0&&lots.every(l=>l.cantidad_disponible>=0),JSON.stringify(lots));
+const saleRows=check(await a.from('detalle_ventas').select('cantidad').eq('producto_id',fixture.id));
+log('Solo una unidad vendida',saleRows.reduce((n,r)=>n+r.cantidad,0)===1,JSON.stringify(saleRows));
+const purchaseRows=check(await a.from('detalle_compras').select('cantidad').eq('producto_id',fixture.id));
+log('Compra duplicada sin detalle residual',purchaseRows.length===1,JSON.stringify(purchaseRows));
+const fake='qa-bloqueo-'+tag+'@example.test';let statuses=[];
+for(let i=0;i<6;i++){
+const r=await fetch(config.supabaseUrl+'/functions/v1/admin-access',{method:'POST',headers:{apikey:config.supabasePublishableKey,'Content-Type':'application/json'},body:JSON.stringify({action:'login',email:fake,password:'invalida-para-prueba'})});
+statuses.push(r.status);await r.text();out.textContent=JSON.stringify([...results,{test:'Intentos ficticios en curso',detail:statuses}],null,2);
+}
+log('Bloqueo tras cinco fallos',statuses.slice(0,5).every(s=>s===401)&&statuses[5]===429,JSON.stringify(statuses));
+}catch(e){log('Error de ejecución',false,e.message)}
+finally{if(fixture){try{check(await a.from('productos').update({activo:false}).eq('id',fixture.id));log('Producto de prueba desactivado',true,fixture.codigo)}catch(e){log('Desactivar producto de prueba',false,e.message)}}for(const c of channels)await b.removeChannel(c);out.textContent=JSON.stringify({finalizado:true,results},null,2);}
+};
+</script></html>

@@ -1,0 +1,11 @@
+[functions.admin-access]
+# Login and recovery are anonymous; all privileged actions verify JWT in the handler.
+verify_jwt = false
+
+[functions.auth-email]
+# Supabase Send Email Hook: verified with Standard Webhooks signature.
+verify_jwt = false
+
+[functions.receipt-email]
+# Preserve platform JWT verification plus explicit checks in the handler.
+verify_jwt = true

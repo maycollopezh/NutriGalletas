@@ -1,0 +1,17 @@
+{
+  "name": "nutrigalletas-administracion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:inventory:db": "node tests/inventory-sql.mjs",
+    "test:db": "node tests/sql-validation.mjs",
+    "build": "node scripts/build.mjs",
+    "test:observations:db": "node tests/observations-sql.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14"
+  }
+}
