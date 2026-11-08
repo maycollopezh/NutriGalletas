@@ -1,3 +1,4 @@
+import {assistantView} from './assistant.js';
 import {prepareImage,IMAGE_TABLES} from './images.js';
 import { cashSettlement, saleLots, replenishment, validReceiptEmail } from './operations.js';
 import { qrSaleFingerprint, canConfirmQrSale, fixedQrPanel } from './payments.js';
@@ -19,7 +20,7 @@ const imageChanges=new WeakMap();
 let sideRecord = null, expandedSale = '';
 let categoryFilter = '', inventoryFilter = 'all', saleOpen = false, saleMethod = 'efectivo', saleSearch = '';
 let from = shiftDay(-6), to = today();
-const titles = { planificacion:'Comprar a tiempo',dashboard:'Resumen del negocio',usuarios:'Equipo',categorias:'Categorías',productos:'Productos',proveedores:'Proveedores',compras:'Compras',inventario:'Inventario',ventas:'Ventas',gastos:'Gastos' };
+const titles = {asistente:'Asistente', planificacion:'Comprar a tiempo',dashboard:'Resumen del negocio',usuarios:'Equipo',categorias:'Categorías',productos:'Productos',proveedores:'Proveedores',compras:'Compras',inventario:'Inventario',ventas:'Ventas',gastos:'Gastos' };
 const descriptions = { dashboard:'Así va tu tienda. Revisa lo vendido y lo que necesita atención.',usuarios:'El administrador crea las cuentas y asigna sus tareas.',categorias:'Agrupa las galletas para encontrarlas más rápido.',productos:'Guarda nombre, presentación y precio.',proveedores:'Encuentra sus datos cuando necesites reponer.',compras:'Una compra recibida suma productos al inventario.',inventario:'Lo que tienes y lo que necesita atención.',ventas:'Consulta lo vendido y abre sus comprobantes.',gastos:'Registra las salidas de dinero de tu negocio.' };
 function shiftDay(n) { const d = new Date(today() + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -68,7 +69,7 @@ function planningNotice() {
 }
 function render() {
   if (!canAccess(user, page)) page = PERMISSIONS[user.rol][0];
-  const groups = [['TU NEGOCIO', ['dashboard', 'ventas', 'compras', 'inventario', 'planificacion', 'gastos']], ['ORGANIZACIÓN', ['productos', 'categorias', 'proveedores', 'usuarios']]];
+  const groups = [['TU NEGOCIO', ['dashboard', 'ventas', 'compras', 'inventario', 'planificacion', 'gastos', 'asistente']], ['ORGANIZACIÓN', ['productos', 'categorias', 'proveedores', 'usuarios']]];
   app.innerHTML = `<div class="shell" data-view="${page}"><button class="nav-veil" data-action="menu" aria-label="Cerrar menú"></button><aside class="sidebar">${brand()}<div class="workspace-label"><span class="workspace-dot"></span> MI TIENDA <span class="workspace-place">La Paz, BO</span></div><div class="sidebar-navigation">${groups.map(([label, pages]) => `<nav class="nav-group" aria-label="${label}"><p class="nav-label">${label}</p>${pages.filter(p => canAccess(user, p)).map(p => `<button class="nav-item ${page === p ? 'active' : ''}" data-page="${p}" ${page === p ? 'aria-current="page"' : ''}>${icon(p)}<span>${p === 'dashboard' ? 'Resumen' : titles[p]}</span>${page === p ? '<span class="nav-current-dot" aria-hidden="true"></span>' : ''}</button>`).join('')}</nav>`).join('')}</div><div class="sidebar-bottom"><div class="user"><span class="avatar">${esc(user.nombre.trim().split(/\s+/).slice(0,2).map(n=>n[0]).join(''))}</span><div><strong>${esc(user.nombre)}</strong><small>${ROLES[user.rol]}</small></div></div><button class="logout-button" data-action="logout">${icon('salir')}<span>Cerrar sesión</span></button></div></aside><main class="main"><header class="topbar"><div class="topbar-context"><button class="mobile-menu small" data-action="menu" aria-label="Abrir menú" aria-expanded="false">☰</button><span class="mobile-brand">NutriGalletas</span><span class="topbar-icon">${icon(page)}</span><span class="breadcrumb">NutriGalletas <span> › </span><b>${titles[page]}</b></span></div><div class="top-actions"><span class="mode ${config.mode === 'demo' ? '' : 'cloud'}">${config.mode === 'demo' ? 'DEMOSTRACIÓN' : 'Mi tienda'}</span><span class="date">${icon('calendario')} ${formatDate(today())}</span><span class="top-profile">${icon('usuarios')} <strong>${esc(user.nombre.split(' ')[0])}</strong></span><button class="refresh-button" data-action="refresh" aria-label="Actualizar datos">↻</button></div></header><div class="content">${data.mejoras_pendientes?'<p class="notice">Hay una actualización de inventario y cobros pendiente de activar en la base de datos.</p>':''}${saleOpen && page === 'ventas' ? saleView() : composedView()}</div><footer class="app-footer"><span>NutriGalletas <span class="footer-star" aria-hidden="true">✳</span> Cada detalle cuenta.</span><span>Gestión de tu tienda</span></footer></main></div>`;
 }
 function salesTable(sales,actions=true) {
@@ -192,7 +193,7 @@ function openEdit(table, existingId) {
 }
 function sideEditor(title,body) {return `<aside class="side-editor panel"><h2>${title}</h2>${body}</aside>`;}
 function composedView() {
- let body=views[page]();
+ let body=page==='asistente'?assistantView(store,user):views[page]();
  if(page==='planificacion'&&user.rol==='administrador'&&!data.planificacion_pendiente){
    const rows=planningRows(data);const selected=rows.find(r=>r.product.id===sideRecord)||rows.find(r=>r.plan.needsOrder)||rows[0];
    if(selected)body=`<div class="reference-columns planning-columns"><div>${body}</div>${sideEditor('Ajustar recomendación',planningForm(data,selected.product.id))}</div>`;
@@ -305,7 +306,7 @@ document.addEventListener('submit', async event => {
   if (submit) submit.disabled = true;
   try {
     if(form.id==='receipt-email-form'){await deliverReceipt(form.dataset.id,validReceiptEmail(values.email));}
-    if (form.id === 'login-form') { if (submit) submit.textContent = 'Iniciando sesión…'; user = await store.login(values.email.trim(), values.password); if (submit) submit.textContent = 'Cargando datos…'; page = PERMISSIONS[user.rol][0]; await refresh(); await store.startUpdates?.(() => { if (!modal.open && !saleOpen && !document.activeElement?.closest('.side-editor') && document.visibilityState === 'visible') refresh().catch(e => toast(e.message, true)); }); }
+    if (form.id === 'login-form') { if (submit) submit.textContent = 'Iniciando sesión…'; user = await store.login(values.email.trim(), values.password); if (submit) submit.textContent = 'Cargando datos…'; page = PERMISSIONS[user.rol][0]; await refresh(); await store.startUpdates?.(() => { if (!modal.open && !saleOpen && !document.activeElement?.closest('.side-editor, #assistant-panel') && document.visibilityState === 'visible') refresh().catch(e => toast(e.message, true)); }); }
     if (form.id === 'recover-form') { await store.recover(values.email.trim()); modal.close(); toast('Si el correo corresponde al administrador, recibirá un enlace de recuperación.'); }
     if (form.id === 'password-form') { await store.finishRecovery(values.password); modal.close(); loginView(); toast('Contraseña actualizada. Inicia sesión nuevamente.'); }
     if (form.id === 'edit-form') {

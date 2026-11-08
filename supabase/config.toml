@@ -9,3 +9,7 @@ verify_jwt = false
 [functions.receipt-email]
 # Preserve platform JWT verification plus explicit checks in the handler.
 verify_jwt = true
+
+[functions.nutri-ai]
+# Mixed webhook/web entry point: HMAC + Make secret for WhatsApp; verified JWT + rol_actual for web.
+verify_jwt = false

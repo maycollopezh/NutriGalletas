@@ -1,6 +1,6 @@
 export const ROLES = { administrador: 'Administrador', cajero: 'Cajero', almacen: 'Encargado de almacén' };
 export const PERMISSIONS = {
-  administrador: ['dashboard', 'usuarios', 'categorias', 'productos', 'proveedores', 'compras', 'inventario', 'planificacion', 'ventas', 'gastos'],
+  administrador: ['dashboard', 'usuarios', 'categorias', 'productos', 'proveedores', 'compras', 'inventario', 'planificacion', 'ventas', 'gastos', 'asistente'],
   cajero: ['productos', 'ventas'],
   almacen: ['categorias', 'productos', 'proveedores', 'compras', 'inventario', 'planificacion'],
 };
