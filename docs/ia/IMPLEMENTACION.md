@@ -2,9 +2,11 @@
 
 ## Estado de esta entrega
 
-El código local incorpora el cerebro compartido, la pantalla administrativa, la migración incremental 006 y pruebas. La migración 006 fue aplicada en Supabase el 8 de noviembre de 2026 y una consulta real devolvió el inventario del proyecto. La función nutri-ai fue desplegada con verificaciones propias autorizadas; sus cuatro rutas rechazaron solicitudes anónimas con HTTP 403. Eso no confirma una respuesta de OpenAI ni una entrega por WhatsApp: faltan credenciales y pruebas de extremo a extremo. La web aún debe publicarse/verificarse en Netlify.
+La migración 006 está aplicada en Supabase y `nutri-ai` está desplegada con las verificaciones propias autorizadas. La web está publicada en https://nutrigalletas-lp.netlify.app/ y OpenAI está conectado. Antes de que el propietario asumiera las pruebas se verificaron consultas de finanzas e inventario; no se confirmaron operaciones comerciales. Desde su indicación de no hacer pruebas, solo se trabaja en configuración y publicación.
 
-Make: se clonó el escenario de Don Juan como **NutriGalletas | Asistente IA | Texto y audio**, ID 6952510, inicialmente INACTIVO. No activar mientras conserve URLs o secretos del otro proyecto. Don Juan no debe modificarse.
+Make: escenario **NutriGalletas | Asistente IA | Texto y audio**, ID 6952510. Se importó el flujo adaptado con rutas exclusivas de NutriGalletas, webhook propio, recepción inmediata y límite de seis inicios por minuto. Permanece inactivo hasta completar la credencial exclusiva y YCloud. Don Juan no se modifica.
+
+El propietario conectó **+59162502582** como **NutriGalletas** en el portafolio **BenforMarket-MKT** (Meta business 994888656465436, activo 1409925087792062). Meta muestra Conectado. Esto sustituye el número inicialmente propuesto; todavía hay que actualizar YCLOUD_BUSINESS_PHONE y verificar su aparición en la cuenta de YCloud adecuada. La sesión YCloud consultada solo muestra Don Juan. Las banderas de WhatsApp y automatizaciones permanecen desactivadas hasta completar conexiones.
 
 ## Acceso y reglas
 
@@ -57,7 +59,7 @@ Responses usa herramientas de esquema estricto y `store:false`; se envían el me
 4. Adaptar la copia de Make: todos los HTTP al proyecto NutriGalletas, `nutri-ai/preflight` y `nutri-ai/message`; reemplazar Authorization de proyecto y X-Make-Secret. Preflight debe recibir cuerpo JSON CRUDO y YCloud-Signature. Mantener las expresiones y filtros de tipo de mensaje, revisar audio 2 MB/redirecciones. La salida preflight conserva sender/eventId/type/at/text/audioUrl/proof.
 5. Configurar nuevo endpoint YCloud al webhook NUEVO de Make con encabezados y JSON pass-through. Nunca redirigir el endpoint de Don Juan.
 6. Probar texto, audio, remitente no autorizado, repetición, confirmación, cancelación y caducidad antes de activar escenario.
-7. Crear escenario separado de Make, cada 5 minutos: POST `https://jdfemijbeqxwcilyhxxv.supabase.co/functions/v1/nutri-ai/dispatch` con X-Make-Secret y cuerpo `{}`. No usa OpenAI. La hora se evalúa en Bolivia en el servidor.
+7. Crear escenario separado de Make, cada 15 minutos (mínimo mostrado por el plan actual de Make): POST `https://jdfemijbeqxwcilyhxxv.supabase.co/functions/v1/nutri-ai/dispatch` con X-Make-Secret y cuerpo `{}`. No usa OpenAI. La hora se evalúa en Bolivia en el servidor.
 8. Alertas desde 08:00, una por día si hay bajo stock o vencimientos. Recordatorios cuando vencen. Fuera de la ventana de conversación de 24h necesita plantilla aprobada; no simular envío libre.
 9. PDF semanal: domingo 20:00 Bolivia; período lunes 00:00 a domingo 20:00. Envío únicamente al correo del administrador activo. Si la tienda vende después, esas operaciones no forman parte de ese corte.
 10. `npm test`, pruebas SQL y `npm run build`; publicar archivos web mediante el repositorio/Netlify habitual. Verificar la sesión real después del despliegue.

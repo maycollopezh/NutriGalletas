@@ -1,6 +1,7 @@
 export const zone='America/La_Paz';
 export const day=(now=new Date())=>new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
 export const money=n=>'Bs '+Number(n||0).toFixed(2).replace('.',',');
+export const validDay=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value+'T12:00:00Z'))&&new Date(value+'T12:00:00Z').toISOString().slice(0,10)===value;
 export const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 export function resolveEntity(query,rows,label){
  const q=normalize(query);if(!q)throw Error(`¿Qué ${label} quieres usar?`);
@@ -11,7 +12,7 @@ export function resolveEntity(query,rows,label){
 }
 export function period(intent,now=new Date()){
  const today=day(now);const from=intent.desde||today;const to=intent.hasta||today;
- if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to)||Number.isNaN(Date.parse(from))||Number.isNaN(Date.parse(to))||from>to||to>today||new Date(to)-new Date(from)>365*86400000)throw Error('Indica un rango válido de hasta un año y sin fechas futuras.');
+ if(!validDay(from)||!validDay(to)||from>to||to>today||new Date(to)-new Date(from)>365*86400000)throw Error('Indica un rango válido de hasta un año y sin fechas futuras.');
  return {desde:from,hasta:to===today?now.toISOString():`${to}T23:59:59.999-04:00`};
 }
 function number(value,label,integer=false){if(value===null||value===''||!Number.isFinite(Number(value))||Number(value)<=0||Number(value)>999999||(!integer&&Math.abs(Math.round(Number(value)*100)-Number(value)*100)>1e-7)||(integer&&!Number.isSafeInteger(Number(value))))throw Error(`Indica ${label} válido${integer?' (entero)':''}.`);return Number(value);}
@@ -35,14 +36,14 @@ export function prepareDraft(i,catalog,now=new Date()){
   const quantity=number(i.items[0].cantidad,'una cantidad',true),cost=number(i.costo_unitario,'el costo por paquete');
   if(quantity>100000)throw Error('La cantidad máxima es 100000 paquetes.');
   if(!i.codigo_lote?.trim()||i.codigo_lote.length>160)throw Error('¿Cuál es el código impreso en el lote?');
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(i.fecha||'')||Number.isNaN(Date.parse(i.fecha))||i.fecha<day(now))throw Error('¿Qué fecha de vencimiento tiene el lote? Usa una fecha vigente.');
+  if(!validDay(i.fecha)||i.fecha<day(now))throw Error('¿Qué fecha de vencimiento tiene el lote? Usa una fecha vigente.');
   data={producto_id:p.id,proveedor_id:supplier.id,cantidad:quantity,costo_unitario:cost,codigo_lote:i.codigo_lote.trim(),fecha_vencimiento:i.fecha,observacion:i.nota||''};
   summary=`COMPRA RECIBIDA\n${supplier.nombre}\n${quantity} × ${p.nombre} a ${money(cost)}\nLote: ${i.codigo_lote} · vence ${i.fecha}\nTotal: ${money(quantity*cost)}\nEsto registra mercadería ya recibida, no encarga un pedido al proveedor.`;
  }else if(type==='gasto'){
   if(!i.concepto||i.concepto.trim().length<2||i.concepto.length>160)throw Error('¿En qué se gastó el dinero?');
   if(!i.categoria||i.categoria.length>160)throw Error('¿Qué categoría tiene el gasto?');
   const value=number(i.monto,'el monto'); const date=i.fecha||day(now);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date))||date>day(now))throw Error('Indica la fecha del gasto, sin fechas futuras.');
+  if(!validDay(date)||date>day(now))throw Error('Indica la fecha del gasto, sin fechas futuras.');
   data={concepto:i.concepto,categoria:i.categoria,monto:value,fecha:date,observacion:i.nota||''};summary=`GASTO\n${i.concepto} · ${i.categoria}\n${money(value)} · ${date}`;
  }else if(type==='recordatorio'){
   const at=i.fecha;if(!at||!/(Z|[+-]\d\d:\d\d)$/.test(at)||!Number.isFinite(Date.parse(at))||new Date(at)<=now)throw Error('¿Qué día y hora de Bolivia quieres el recordatorio?');
