@@ -2,13 +2,18 @@
 
 ## Estado de esta entrega
 
-La migración 006 está aplicada en Supabase y `nutri-ai` está desplegada con las verificaciones propias autorizadas. La web está publicada en https://nutrigalletas-lp.netlify.app/ y OpenAI está conectado. Antes de que el propietario asumiera las pruebas se verificaron consultas de finanzas e inventario; no se confirmaron operaciones comerciales. Desde su indicación de no hacer pruebas, solo se trabaja en configuración y publicación.
+La migración 006 está aplicada en Supabase y `nutri-ai` está desplegada con las verificaciones propias autorizadas. La web está publicada en https://nutrigalletas-lp.netlify.app/ y OpenAI está conectado. Las consultas iniciales de finanzas e inventario se comprobaron antes de la instrucción del propietario de asumir las pruebas. Desde esa instrucción no se ejecutaron pruebas, Run once ni mensajes de prueba.
 
-Make: escenario **NutriGalletas | Asistente IA | Texto y audio**, ID 6952510. Se importó el flujo adaptado con rutas exclusivas de NutriGalletas, webhook propio, recepción inmediata y límite de seis inicios por minuto. Los cuatro HTTP de Supabase usan la conexión guardada «NutriGalletas - Supabase protegido», restringida al origen del proyecto. Permanece inactivo hasta completar los secretos de Supabase y YCloud. Don Juan no se modifica.
+Configuración guardada y activada el 9 de noviembre de 2026:
 
-El propietario conectó **+59162502582** como **NutriGalletas** en el portafolio **BenforMarket-MKT** (Meta business 994888656465436, activo 1409925087792062). Meta muestra Conectado. Esto sustituye el número inicialmente propuesto; todavía hay que actualizar YCLOUD_BUSINESS_PHONE y verificar su aparición en la cuenta de YCloud adecuada. La cuenta correcta de YCloud se encontró en el perfil Personal: WABA 4613063352282906, con NutriGalletas conectado. La bandera IA_AUTOMATIONS_ENABLED fue activada; IA_WHATSAPP_ENABLED sigue desactivada hasta completar los dos secretos de YCloud.
+- WhatsApp NutriGalletas: **+59162502582**, conectado en YCloud del perfil Personal, WABA **4613063352282906**, portafolio BenforMarket-MKT. Administrador autorizado: **+59168258788**.
+- Webhook YCloud **6af143ca52123331d7183a16**, estado **Active**, solo `whatsapp.inbound_message.received`, hacia el webhook exclusivo de Make.
+- Make **NutriGalletas | Asistente IA | Texto y audio**, ID **6952510**, estado **Active**, recepción inmediata, máximo seis inicios por minuto. Sus HTTP de Supabase usan la conexión exclusiva «NutriGalletas - Supabase protegido», restringida al origen del proyecto. El escenario Don Juan se conserva.
+- Make **NutriGalletas | Alertas y PDF semanal**, ID **6956038**, estado **Active**, cada 15 minutos en America/La_Paz, POST `nutri-ai/dispatch`. No se verificó entrega de reportes.
+- Supabase: MAKE_WEBHOOK_SECRET, YCLOUD_API_KEY y YCLOUD_SIGNING_SECRET guardados por el propietario. IA_WHATSAPP_ENABLED y IA_AUTOMATIONS_ENABLED activados. YCLOUD_ALERT_TEMPLATE = nutrigalletas_aviso_administrador.
+- Plantilla `nutrigalletas_aviso_administrador`, español, Utility, enviada correctamente; estado observado **In review**. Un solo parámetro y muestra ficticia.
 
-Agenda separada creada en Make: **NutriGalletas | Alertas y PDF semanal**, ID **6956038**, POST a `nutri-ai/dispatch`, con la misma conexión protegida. Programación cada 15 minutos, zona America/La_Paz; escenario activo y bandera de automatizaciones habilitada. El PDF queda programado; no se verificó ninguna entrega. WhatsApp permanece pausado. No se ejecutó Run once. El webhook YCloud 6af143ca52123331d7183a16 fue creado con autorización para `whatsapp.inbound_message.received`; permanece inactivo hasta guardar sus credenciales en Supabase. MAKE_WEBHOOK_SECRET ya está guardado en Supabase. La plantilla española `nutrigalletas_aviso_administrador` está en preparación: el editor requiere corregir el Body manualmente antes de enviarla a revisión. Los campos YCLOUD_API_KEY y YCLOUD_SIGNING_SECRET están preparados en Supabase para que el propietario pegue y guarde sus valores.
+**Pendiente externo:** aprobación de la plantilla por Meta. YCLOUD_TEMPLATE_APPROVED permanece en false. Una vez que YCloud muestre la plantilla aprobada, guardar YCLOUD_TEMPLATE_APPROVED=true en Supabase. Mientras sea false, los avisos fuera de la ventana de conversación devuelven `pendingTemplate` antes de reservar un envío: no se marcan como enviados ni fallidos. Las respuestas a mensajes del administrador y el PDF por correo no dependen de esta bandera. La operación completa aún debe ser probada por el propietario.
 
 ## Acceso y reglas
 
@@ -42,7 +47,8 @@ Guardar en Edge Functions > Secrets del proyecto **jdfemijbeqxwcilyhxxv**:
 | MAKE_WEBHOOK_SECRET | Secreto aleatorio propio, igual en los HTTP de Make |
 | YCLOUD_API_KEY | Clave propia de YCloud con envío habilitado |
 | YCLOUD_SIGNING_SECRET | Secreto del nuevo webhook de NutriGalletas, no el de Don Juan |
-| YCLOUD_ALERT_TEMPLATE | Nombre de plantilla aprobada en español, cuerpo con una variable de texto |
+| YCLOUD_ALERT_TEMPLATE | nutrigalletas_aviso_administrador, español, cuerpo con una variable de texto |
+| YCLOUD_TEMPLATE_APPROVED | false mientras Meta revisa; true únicamente después de observar Approved |
 | IA_ADMIN_WHATSAPP | Número autorizado del administrador con prefijo 591, solo dígitos |
 | YCLOUD_BUSINESS_PHONE | Número del asistente con prefijo 591, solo dígitos |
 | IA_ADMIN_USER_ID | 59d0d5e2-fff9-446a-aecc-3152efc4fe5d |
@@ -86,6 +92,3 @@ Si la dependencia está instalada en el proyecto, basta `node tests/assistant-sq
 
 Documentación: https://developers.openai.com/api/docs/guides/function-calling ; https://developers.openai.com/api/docs/models/gpt-5.4-mini ; https://ycloud.readme.io/reference/configure-webhooks ; https://docs.ycloud.com/reference/whatsapp_message-send-directly .
 
-## Cierre de configuración pendiente
-
-El ajuste de plantilla (texto de parámetro en una línea, máximo 800 caracteres) y el aislamiento de fallos de WhatsApp para no bloquear el PDF semanal fueron desplegados en nutri-ai. La interfaz confirmó Successfully updated edge function. Desde la indicación del propietario no se ejecutaron pruebas, Run once ni mensajes de prueba. Faltan los dos secretos de YCloud, habilitar el webhook y el escenario entrante y guardar IA_WHATSAPP_ENABLED=true. La plantilla requiere envío a revisión y aprobación de Meta.

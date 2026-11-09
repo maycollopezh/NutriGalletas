@@ -28,6 +28,7 @@ async function webUser(req:Request){
 function makeAccess(req:Request){const secret=env('MAKE_WEBHOOK_SECRET');if(!secret||!equal(req.headers.get('x-make-secret'),secret))throw Error('Acceso denegado');}
 async function sendWhatsApp(text:string,jobKey:string,template=false){
  if(env('IA_WHATSAPP_ENABLED')!=='true')return {paused:true};
+ if(template&&env('YCLOUD_TEMPLATE_APPROVED')!=='true')return {pendingTemplate:true};
  const reservation=await rpc(adminId,'whatsapp','envio',{clave:jobKey,tipo:'whatsapp'});if(!reservation.nuevo)return {duplicate:true};
  try{
   const key=env('YCLOUD_API_KEY');if(!key)throw Error('Falta la conexión de YCloud');
