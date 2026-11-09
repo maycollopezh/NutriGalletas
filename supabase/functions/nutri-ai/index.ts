@@ -34,7 +34,7 @@ async function sendWhatsApp(text:string,jobKey:string,template=false){
   const body:any={from:'+'+businessPhone,to:'+'+adminPhone,type:'text',text:{body:text.slice(0,4000)}};
   if(template){
    if(!env('YCLOUD_ALERT_TEMPLATE'))throw Error('Falta aprobar la plantilla de alertas');
-   delete body.text;body.type='template';body.template={name:env('YCLOUD_ALERT_TEMPLATE'),language:{code:'es'},components:[{type:'body',parameters:[{type:'text',text:text.slice(0,1000)}]}]};
+   delete body.text;body.type='template';body.template={name:env('YCLOUD_ALERT_TEMPLATE'),language:{code:'es'},components:[{type:'body',parameters:[{type:'text',text:text.replace(/[\r\n\t]+/g,' · ').replace(/ {2,}/g,' ').slice(0,800)}]}]};
   }
   const res=await fetch('https://api.ycloud.com/v2/whatsapp/messages/sendDirectly',{method:'POST',headers:{'X-API-Key':key,'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
   if(!res.ok)throw Error('YCloud rechazó el envío');const out=await res.json();
@@ -94,11 +94,12 @@ async function dispatch(){
  const now=new Date(),local=new Date(now.getTime()-4*3600000),today=day(now),agenda=await rpc(adminId,'web','agenda');
  const within=agenda.ultimo_entrante&&now.getTime()-Date.parse(agenda.ultimo_entrante)<24*3600000;
  const report=await rpc(adminId,'web','consulta',{desde:today,hasta:now.toISOString()});const results:any[]=[];
+ const notify=async(text:string,key:string)=>{try{return await sendWhatsApp(text,key,!within);}catch{return {whatsappError:true,job:key};}};
  if(local.getUTCHours()>=8){
   const lows=report.inventario.filter((x:any)=>x.reponer),soon=report.lotes.filter((x:any)=>new Date(x.vence).getTime()-new Date(today).getTime()<=15*86400000);
-  if(lows.length||soon.length)results.push(await sendWhatsApp('Aviso de tu tienda\n'+formatReport(report,'inventario')+'\n\n'+formatReport(report,'vencimientos'),'alerta:'+today,!within));
+  if(lows.length||soon.length)results.push(await notify('Aviso de tu tienda\n'+formatReport(report,'inventario')+'\n\n'+formatReport(report,'vencimientos'),'alerta:'+today));
  }
- for(const reminder of agenda.recordatorios)results.push(await sendWhatsApp('Recordatorio: '+reminder.texto,'recordatorio:'+reminder.id,!within));
+ for(const reminder of agenda.recordatorios)results.push(await notify('Recordatorio: '+reminder.texto,'recordatorio:'+reminder.id));
  if(local.getUTCDay()===0&&local.getUTCHours()>=20){
   const cutoff=new Date(today+'T20:00:00-04:00'),monday=new Date(local);monday.setUTCDate(monday.getUTCDate()-6);
   const range={desde:monday.toISOString().slice(0,10),hasta:cutoff.toISOString()},weekly=await rpc(adminId,'web','consulta',range),key='pdf:'+today;
