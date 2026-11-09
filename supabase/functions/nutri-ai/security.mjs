@@ -1,6 +1,7 @@
+import {Buffer} from 'node:buffer';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 export const mac=(s,key)=>createHmac('sha256',key).update(s).digest('hex');
-export const equal=(a,b)=>typeof a==='string'&&typeof b==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
+export const equal=(a,b)=>{if(typeof a!=='string'||typeof b!=='string')return false;const left=Buffer.from(a),right=Buffer.from(b);return left.length===right.length&&timingSafeEqual(left,right);};
 export const phone=s=>String(s||'').replace(/\D/g,'');
 export function verifyEvent(raw,signature,secret,now=Date.now()){
  const t=signature?.match(/(?:^|,)\s*t=(\d+)/)?.[1],sig=signature?.match(/(?:^|,)\s*s=([a-f0-9]{64})/i)?.[1];

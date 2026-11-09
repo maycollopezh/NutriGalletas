@@ -92,3 +92,9 @@ Si la dependencia está instalada en el proyecto, basta `node tests/assistant-sq
 
 Documentación: https://developers.openai.com/api/docs/guides/function-calling ; https://developers.openai.com/api/docs/models/gpt-5.4-mini ; https://ycloud.readme.io/reference/configure-webhooks ; https://docs.ycloud.com/reference/whatsapp_message-send-directly .
 
+
+## Incidencia de recepción: 9 de noviembre de 2026
+
+El mensaje real del propietario llegó a Make (ejecución b6fa926e62034502aea9fced643e3c6d), pero preflight devolvió HTTP 400 y Make desactivó el escenario. Se encontró `Buffer` sin importar en security.mjs: el bundle mantenía una referencia global `Buffer`, mientras que el import del punto de entrada estaba renombrado a `Buffer2`. Se añadió el import explícito node:buffer y la comparación constante ahora verifica las longitudes de bytes. La función corregida fue desplegada en Supabase; no se ejecutaron pruebas.
+
+El HTTP preflight conserva autenticación, firma y filtros de tipo, pero Return error if HTTP request fails se cambió a No: un rechazo no debe desactivar el canal. La respuesta de error no tiene type=text/audio y no pasa el router. El cambio quedó guardado en Make. La reactivación está pendiente de resolver un mensaje en cola; no se borró ni reprocesó. La revisión automática bloqueó Process old data por la instrucción previa de no enviar mensajes. Se pidió autorización específica para procesar el mensaje real.
