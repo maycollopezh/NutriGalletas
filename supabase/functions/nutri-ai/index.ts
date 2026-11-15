@@ -4,6 +4,8 @@ import {PDFDocument,StandardFonts,rgb} from 'npm:pdf-lib@1.17.1';
 import {Buffer} from 'node:buffer';
 import {receiptContent,type Receipt} from '../receipt-email/handler.ts';
 import {createBrain,openAIIntent,openAIAnswer} from './brain.mjs';
+import {inventoryAlert,briefFinance,customerText} from './presentation.mjs';
+import {createPublicBrain,interpretCustomer} from './public-brain.mjs';
 import {day,formatReport} from './core.mjs';
 import {equal,phone,verifyEvent,audioUrl,proofFor,verifyProof} from './security.mjs';
 const env=(name:string)=>Deno.env.get(name)||'';
@@ -17,6 +19,11 @@ async function rpc(user:string,channel:string,action:string,data:unknown={}){
  if(r.error)throw Error(r.error.code==='PGRST202'?'Falta activar la actualización 006 del asistente.':r.error.message);return r.data;
 }
 const brain=createBrain({rpc,interpret:(message:string,history:unknown[],catalog:unknown,now:Date,context:unknown)=>openAIIntent({key:env('OPENAI_API_KEY'),model:env('OPENAI_MODEL')||'gpt-5.4-mini',message,history,catalog,now,context}),compose:(input:any)=>openAIAnswer({key:env('OPENAI_API_KEY'),model:env('OPENAI_MODEL')||'gpt-5.4-mini',...input})});
+async function publicRpc(sender:string,action:string,data:unknown={}){
+ const result=await admin.rpc('ia_atencion_publica',{p_telefono:sender,p_accion:action,p_datos:data});
+ if(result.error)throw Error(result.error.code==='PGRST202'?'La atención de clientes está en preparación. Intenta más tarde.':result.error.message);return result.data;
+}
+const publicBrain=createPublicBrain({rpc:publicRpc,interpret:(input:any)=>interpretCustomer({key:env('OPENAI_API_KEY'),model:env('OPENAI_MODEL')||'gpt-5.4-mini',...input})});
 async function webUser(req:Request){
  if(req.headers.get('origin')!==env('APP_ORIGIN'))throw Error('Acceso denegado');
  const token=req.headers.get('authorization')?.replace(/^Bearer /i,'')||'';
@@ -26,13 +33,15 @@ async function webUser(req:Request){
  return verified.data.user.id;
 }
 function makeAccess(req:Request){const secret=env('MAKE_WEBHOOK_SECRET');if(!secret||!equal(req.headers.get('x-make-secret'),secret))throw Error('Acceso denegado');}
-async function sendWhatsApp(text:string,jobKey:string,template=false){
+async function sendWhatsApp(text:string,jobKey:string,template=false,recipient=adminPhone){
+ if(!/^[1-9][0-9]{7,14}$/.test(recipient))throw Error('Destino inválido');
  if(env('IA_WHATSAPP_ENABLED')!=='true')return {paused:true};
- if(template&&env('YCLOUD_TEMPLATE_APPROVED')!=='true')return {pendingTemplate:true};
+ // El propietario rechazó envíos de plantillas pagadas fuera de ventana.
+ if(template)return {outsideWindow:true};
  const reservation=await rpc(adminId,'whatsapp','envio',{clave:jobKey,tipo:'whatsapp'});if(!reservation.nuevo)return {duplicate:true};
  try{
   const key=env('YCLOUD_API_KEY');if(!key)throw Error('Falta la conexión de YCloud');
-  const body:any={from:'+'+businessPhone,to:'+'+adminPhone,type:'text',text:{body:text.slice(0,4000)}};
+  const body:any={from:'+'+businessPhone,to:'+'+recipient,type:'text',text:{body:text.slice(0,4000)}};
   if(template){
    if(!env('YCLOUD_ALERT_TEMPLATE'))throw Error('Falta aprobar la plantilla de alertas');
    delete body.text;body.type='template';body.template={name:env('YCLOUD_ALERT_TEMPLATE'),language:{code:'es'},components:[{type:'body',parameters:[{type:'text',text:text.replace(/[\r\n\t]+/g,' · ').replace(/ {2,}/g,' ').slice(0,800)}]}]};
@@ -47,10 +56,11 @@ async function preflight(raw:string,req:Request){
  const event=verifyEvent(raw,req.headers.get('ycloud-signature'),env('YCLOUD_SIGNING_SECRET'));
  if(event.type!=='whatsapp.inbound_message.received')return {ignored:true};
  const m=event.whatsappInboundMessage;
- if(!m?.id||phone(m.to)!==businessPhone||phone(m.from)!==adminPhone)return {ignored:true};
- const state=await rpc(adminId,'whatsapp','estado');
+ if(!m?.id||phone(m.to)!==businessPhone||!/^[1-9][0-9]{7,14}$/.test(phone(m.from)))return {ignored:true};
+ const sender=phone(m.from);
+ const state=sender===adminPhone?await rpc(adminId,'whatsapp','estado'):{estado:'bot'};
  if(state.estado!=='bot'){await rpc(adminId,'whatsapp','historial',{role:'user',content:m.type==='text'?String(m.text?.body||'').slice(0,2000):'[Audio disponible en YCloud Inbox]'});return {ignored:true,humanAttention:true};}
- const p:any={sender:adminPhone,eventId:String(m.id),type:m.type,at:Date.now()};
+ const p:any={sender,eventId:String(m.id),type:m.type,at:Date.now()};
  if(m.type==='text')p.text=String(m.text?.body||'').slice(0,2000);else if(m.type==='audio')p.audioUrl=audioUrl(m.audio?.link);else {p.type='text';p.text='[Mensaje de tipo '+String(m.type).slice(0,30)+'. Explica brevemente que para esta solicitud necesito texto o audio, sin afirmar que viste su contenido.]';}
  p.proof=proofFor(p,env('MAKE_WEBHOOK_SECRET'));return p;
 }
@@ -72,13 +82,14 @@ async function receiptAfterConfirmation(output:any){
  return output;
 }
 async function incoming(p:any){
- verifyProof(p,env('MAKE_WEBHOOK_SECRET'));if(phone(p.sender)!==adminPhone)throw Error('Acceso denegado');
+ verifyProof(p,env('MAKE_WEBHOOK_SECRET'));const sender=phone(p.sender);if(!/^[1-9][0-9]{7,14}$/.test(sender))throw Error('Acceso denegado');
+ if(sender!==adminPhone){const output=await publicBrain({sender,message:p.type==='audio'?String(p.transcript||'').slice(0,2000):p.text,eventId:p.eventId,audioError:p.audioError===true});if(output.suppressed)return {ok:true,suppressed:true};return {reply:output.reply,delivery:await sendWhatsApp(output.reply,'cliente-respuesta:'+sender+':'+p.eventId,false,sender)};}
  let output;
  if(p.audioError)output={reply:'El audio supera los 2 MB. Envía uno más corto o escribe tu consulta.'};
  else output=await brain({user:adminId,channel:'whatsapp',message:p.type==='audio'?String(p.transcript||'').slice(0,2000):p.text,eventId:p.eventId});
  output=await receiptAfterConfirmation(output);
  if(output.suppressed)return {ok:true,suppressed:true};
- const text=output.reply+(output.pending?`\n\nResponde CONFIRMAR${output.pending.qr?' QR VERIFICADO':''} para guardar o CANCELAR para descartar.\nReferencia: ${output.pending.id}`:'');
+ const text=customerText(output.reply)+(output.pending?`\n\nResponde CONFIRMAR${output.pending.qr?' QR VERIFICADO':''} para guardar o CANCELAR para descartar.\nReferencia: ${output.pending.id}`:'');
  const delivery=await sendWhatsApp(text,'respuesta:'+p.eventId);
  // El mensaje real abre la ventana; despacha avisos vencidos sin exigir otro mensaje artificial.
  if(delivery.accepted)await dispatch({includePdf:false}).catch(()=>null);
@@ -102,10 +113,12 @@ async function dispatch({includePdf=true}={}){
  const notify=async(text:string,key:string)=>{try{return await sendWhatsApp(text,key,!within);}catch{return {whatsappError:true,job:key};}};
  if(local.getUTCHours()>=8){
   const lows=report.inventario.filter((x:any)=>x.reponer),soon=report.lotes.filter((x:any)=>new Date(x.vence).getTime()-new Date(today).getTime()<=15*86400000);
-  if(lows.length||soon.length)results.push(await notify('Aviso de tu tienda\n'+formatReport(report,'inventario')+'\n\n'+formatReport(report,'vencimientos'),'alerta:'+today));
+  if(lows.length||soon.length)results.push(await notify(inventoryAlert(report,today),'alerta:'+today));
  }
+ const customerQueue=await publicRpc('','lista').catch(()=>({solicitudes:[]}));
+ for(const request of customerQueue.solicitudes.slice(0,3))results.push(await notify('Nueva solicitud de WhatsApp\n\nTipo: '+(request.tipo==='humano'?'Atención humana':'Consulta de compra')+'\nReferencia: '+request.id+'\n\nRevísala en Asistente IA → Atención de WhatsApp.','atencion:'+request.id));
  for(const reminder of agenda.recordatorios)results.push(await notify('Recordatorio: '+reminder.texto,'recordatorio:'+reminder.id));
- if(local.getUTCHours()>20||(local.getUTCHours()===20&&local.getUTCMinutes()>=15))results.push(await notify('Cierre diario NutriGalletas (corte 20:15)\n'+formatReport(await rpc(adminId,'web','consulta',{desde:today,hasta:today+'T20:15:00-04:00'}),'finanzas'),'cierre:'+today));
+ if(local.getUTCHours()>20||(local.getUTCHours()===20&&local.getUTCMinutes()>=15))results.push(await notify('Cierre diario NutriGalletas · corte 20:15\n\n'+briefFinance(await rpc(adminId,'web','consulta',{desde:today,hasta:today+'T20:15:00-04:00'})),'cierre:'+today));
  if(includePdf&&local.getUTCDay()===0&&local.getUTCHours()>=20){
   const cutoff=new Date(today+'T20:00:00-04:00'),monday=new Date(local);monday.setUTCDate(monday.getUTCDate()-6);
   const range={desde:monday.toISOString().slice(0,10),hasta:cutoff.toISOString()},weekly=await rpc(adminId,'web','consulta',range),key='pdf:'+today;
@@ -129,7 +142,13 @@ Deno.serve(async req=>{
   let output;
   if(path==='webchat'){
    const user=await webUser(req),body=JSON.parse(raw);
-   output=await receiptAfterConfirmation(await brain({user,channel:'web',message:body.message||'',eventId:body.eventId||crypto.randomUUID(),action:body.action,id:body.id,verified:body.verified===true}));
+   if(body.action==='reanudar_cliente'||body.action==='revisar_solicitud'){
+    await publicRpc(phone(body.telefono),body.action==='reanudar_cliente'?'reanudar':'revisar',{id:body.id});
+    output={reply:body.action==='reanudar_cliente'?'Asistente reanudado para ese cliente.':'Solicitud marcada como revisada; no registra una venta ni aprueba un pago.',...await publicRpc('','lista')};
+   }else{
+    output=await receiptAfterConfirmation(await brain({user,channel:'web',message:body.message||'',eventId:body.eventId||crypto.randomUUID(),action:body.action,id:body.id,verified:body.verified===true}));
+    if(body.action==='estado')Object.assign(output,await publicRpc('','lista'));
+   }
   }else{makeAccess(req);if(path==='preflight')output=await preflight(raw,req);else if(path==='message')output=await incoming(JSON.parse(raw));else if(path==='dispatch')output=await dispatch();else return Response.json({error:'Ruta inexistente'},{status:404});}
   return Response.json(output,{headers:path==='webchat'?cors:{'Cache-Control':'no-store'}});
  }catch(caught){const e=caught instanceof Error?caught:new Error("Error del servicio");const denied=e.message==='Acceso denegado';return Response.json({error:denied?e.message:'No se pudo completar la operación. '+(e.message?.includes('006')?e.message:'Revisa la conexión o vuelve a intentarlo.')},{status:denied?403:400,headers:path==='webchat'?cors:{'Cache-Control':'no-store'}});}

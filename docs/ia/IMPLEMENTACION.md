@@ -127,3 +127,33 @@ Se encontró la agenda 6956038 Inactive después de Forbidden. Make impidió act
 
 
 **Resultado observado en Make el 15/11:** Don Juan 6794424 Inactive; NutriGalletas chat 6952510 Active; NutriGalletas agenda 6956038 Active, Every 15 minutes. La activación se logró después de desactivar Don Juan, por instrucción explícita del propietario. No se usaron Run once ni reejecuciones. La función conversacional se desplegó y el código web/documentación quedaron publicados en el repositorio; no se comprobó un envío ni se ejecutó una conversación de prueba. Los registros históricos de éxito en Make no acreditan por sí solos entrega de la versión actual.
+
+
+## Atención pública y mensajes legibles — 15/11/2026
+
+El propietario observó en WhatsApp dos problemas reales: respuestas con metainstrucciones («Saludo breve», «El usuario pregunta…») y un aviso que incluía todo el inventario. También solicitó atender números distintos al administrador, siguiendo la referencia de Don Juan y adaptando el alcance a NutriGalletas.
+
+### Conversación y presentación
+
+Se separó la redacción final de la extracción de intención: respuestas y aclaraciones tienen descripción explícita de texto dirigido al destinatario, se filtran metainstrucciones y las conversaciones administrativas se redactan en una segunda etapa. Saludos y ayuda básica tienen respuestas naturales seguras sin consumir OpenAI. Los reportes piden título, espacios, viñetas, máximo 150 palabras salvo detalle, y evitan calificar el desempeño sin meta o comparación. Hay presentación breve calculada incluso si falla la redacción.
+
+El aviso diario incluye solo productos por reponer, lotes vencidos y vencimientos en 15 días; máximo cinco entradas por sección y referencia a la web para ampliar. No repite todos los productos, EOQ, cobertura y demanda en cada aviso. Esos cálculos siguen disponibles al consultarlos y en el PDF. La llegada de un aviso después de saludar responde al despacho de pendientes dentro de la ventana, no a una venta ni a un error de saldo.
+
+### Dos ámbitos separados
+
+- Administrador: conserva sus consultas financieras, inventarios, EOQ/FEFO, confirmaciones y reglas. El chat web sigue reservado al administrador propietario.
+- Otros números de WhatsApp: catálogo activo de productos, presentación, categoría y precio; conversación y seguimiento de sus propias solicitudes; petición de atención humana. El servidor no les suministra costos, ganancias, proveedores, cifras de stock ni lotes. No se confía en una afirmación del mensaje para elevar permisos.
+- Las solicitudes de compra requieren productos, cantidades y nombre. El servidor resuelve productos y calcula precios; CONFIRMAR envía una solicitud para revisión, CANCELAR descarta. El precio se vuelve a comprobar en SQL y la propuesta vence en diez minutos. Máximo quince líneas. No se crea una venta, no se reserva stock, no se registra un pago y no se promete reparto, horario o disponibilidad.
+- Reclamos, cambios, cancelaciones de compras previas y solicitud de una persona pasan a atención humana por ese número. No se alteran ventas históricas. La conversación queda pausada hasta reanudarla desde la web.
+
+### Base y web
+
+Migración incremental 007_atencion_publica_whatsapp.sql: private.ia_clientes_whatsapp y private.ia_solicitudes_clientes, RLS sin acceso anon/authenticated, RPC ia_atencion_publica solo service_role. No se amplían los permisos de las tablas administrativas. Firma YCloud y prueba Make siguen validándose antes de aceptar cualquier remitente; se valida destino del negocio y formato internacional del remitente. El contenido del modelo nunca decide identidad o permisos.
+
+Historial y propuesta públicos se separan por teléfono; contexto seis mensajes/treinta minutos, borradores diez minutos. Se deduplican eventos antes de confirmar, límite seis entrantes por minuto por remitente; interpretaciones públicas comparten el límite mensual existente de 300 solicitudes OpenAI con administración.
+
+En Asistente IA se añade «Atención de WhatsApp»: solicitudes pendientes, mensajes de atención humana, enlace a YCloud para responder, marcar revisada y cerrar atención/reanudar IA por número. Marcar revisada no aprueba una compra ni acredita entrega. Las notificaciones de solicitudes llegan solo al administrador, dentro de su ventana abierta.
+
+**Plantillas pagadas deshabilitadas por instrucción expresa:** sendWhatsApp retorna outsideWindow antes de reservar o enviar cualquier plantilla. La aceptación de la plantilla por Meta o la bandera de entorno ya no basta para emitirla. No se eliminó la plantilla de YCloud; simplemente no se utiliza. El PDF por correo sigue independiente. Respuestas a clientes solo se producen por su mensaje entrante; el despachador no les envía promociones ni avisos automáticos.
+
+No se realizaron conversaciones, pruebas funcionales, envíos de prueba ni Run once. La validación del sistema la hará el propietario.

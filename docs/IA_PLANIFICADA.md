@@ -2,7 +2,7 @@
 
 El alcance se amplió por autorización del administrador: además de consultas, el asistente puede preparar ventas, compras recibidas, gastos y recordatorios, siempre con resumen y confirmación. Ninguna respuesta interpretada por OpenAI confirma una operación.
 
-El cerebro se implementa en `supabase/functions/nutri-ai/`, compartido entre la web y WhatsApp. Solo accede el administrador propietario; WhatsApp queda vinculado al número autorizado del administrador y al número del negocio, configurados en Supabase. Cajero y almacén conservan sus permisos existentes y no adquieren acceso al asistente.
+El cerebro se implementa en `supabase/functions/nutri-ai/`, compartido entre la web y WhatsApp. El administrador propietario conserva acceso al ámbito privado. WhatsApp también atiende otros números con catálogo público y solicitudes de compra para revisión, sin información financiera ni acceso a operaciones administrativas; cada conversación se aísla por teléfono. El número del negocio y el administrador se configuran en Supabase. Cajero y almacén conservan sus permisos existentes y no adquieren acceso al asistente.
 
 La guía vigente de implementación, secretos, despliegue, pruebas y pendientes está en [docs/ia/IMPLEMENTACION.md](ia/IMPLEMENTACION.md).
 
