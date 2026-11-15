@@ -114,6 +114,16 @@ Se compararon el texto facilitado por el propietario, `_language.mjs`, `_brain.m
 - Alertas desde 08:00; cierre diario nuevo con corte fijo 20:15; PDF dominical conserva 20:00. Un cierre posterior al corte no incluye ventas posteriores. No se añadieron preparación de producción ni entregas de panadería.
 - Ventana de texto: hasta 23,8 h desde el último entrante, con margen respecto de 24 h. Un saludo o consulta diaria del administrador la abre; una respuesta del bot no la extiende. Al cerrarse, no se fuerzan envíos libres.
 
-YCloud observado el 15/11: NutriGalletas +59162502582 conectado, calidad High. Plantilla nutrigalletas_aviso_administrador Spanish **Active-Quality pending**, categoría **Marketing** (Meta cambió la categoría). Se mantiene YCLOUD_TEMPLATE_APPROVED=false: los avisos fuera de ventana siguen bloqueados para no habilitar cargos de plantillas Marketing sin decisión del propietario. Dentro de ventana se usa texto. Esto es una elección de envío, no un fallo de aprobación.
+YCloud observado el 15/11: NutriGalletas +59162502582 conectado, calidad High. Plantilla nutrigalletas_aviso_administrador Spanish **Active-Quality pending**, categoría **Marketing** (Meta cambió la categoría). La última configuración documentada de YCLOUD_TEMPLATE_APPROVED es false; en esta actualización no se habilitó envío de plantillas Marketing fuera de ventana. No se cambió esa bandera ni se verificó su valor actual leyendo secretos. Dentro de ventana se usa texto. Esto es una elección de envío, no un fallo de aprobación.
 
 No se ejecutaron pruebas del sistema, llamadas de prueba a OpenAI, Run once ni mensajes de prueba. El propietario hará la validación funcional final. La preparación del bundle y el guardado/despliegue no equivalen a demostrar recepción de mensajes.
+
+
+### Conexiones y agenda — actualización 15/11/2026
+
+El cerebro conversacional actualizado se desplegó en Supabase y se publicó en GitHub (f6c69b7). El chat de NutriGalletas se observó Active; Make ya tenía ejecuciones históricas del 9/11. Los módulos de texto y audio ahora esperan 120 segundos y conservan las respuestas HTTP de error sin desactivar automáticamente el escenario; los detalles siguen disponibles en la ejecución. La agenda espera 180 segundos.
+
+Se encontró la agenda 6956038 Inactive después de Forbidden. Make impidió activarla por el límite de dos escenarios activos. El propietario autorizó desactivar Don Juan, que ya no utiliza, para dedicar los dos espacios a NutriGalletas. No se aplicó ninguna migración Cron ni se creó otra clave; se conserva la agenda en Make. La desactivación no elimina código, conexiones ni datos de Panadería Don Juan. Las pruebas quedan a cargo del propietario.
+
+
+**Resultado observado en Make el 15/11:** Don Juan 6794424 Inactive; NutriGalletas chat 6952510 Active; NutriGalletas agenda 6956038 Active, Every 15 minutes. La activación se logró después de desactivar Don Juan, por instrucción explícita del propietario. No se usaron Run once ni reejecuciones. La función conversacional se desplegó y el código web/documentación quedaron publicados en el repositorio; no se comprobó un envío ni se ejecutó una conversación de prueba. Los registros históricos de éxito en Make no acreditan por sí solos entrega de la versión actual.
