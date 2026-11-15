@@ -17,9 +17,9 @@ Abre http://127.0.0.1:4317. No se requiere instalar paquetes para la demostraci�
 - Sprint 1: estructura, tres perfiles, usuarios y catálogo implementados en demostración; esquema y funciones de Supabase preparados.
 - Sprint 2: compras recibidas, lotes, ventas, descuento de inventario y comprobantes internos implementados en demostración.
 - Sprint 3: gastos, dashboard, EOQ, punto de pedido, reserva y cobertura implementados. Mínimo automático y demanda diaria conectados a la base de datos. ABC no forma parte de este avance.
-- Sprint 4: IA, WhatsApp y PDF semanal por correo planificados, pendientes.
+- Sprint 4: asistente compartido web/WhatsApp, confirmaciones, recordatorios, alertas y PDF semanal implementados. Ver estado y límites vigentes en docs/ia/IMPLEMENTACION.md; la validación funcional final la realiza el propietario.
 
-**Supabase está creado y conectado.** La migración 004 se aplicó al proyecto NutriGalletas el 6 de noviembre de 2026 y devolvió Success en el editor SQL. El modo de demostración permanece separado y guarda datos ficticios en este navegador. Gmail requiere la configuración de sus secretos y una comprobación real del envío.
+**Supabase está creado y conectado.** La migración 004 se aplicó al proyecto NutriGalletas el 6 de noviembre de 2026 y devolvió Success en el editor SQL. El modo de demostración permanece separado y guarda datos ficticios en este navegador. El propietario confirmó el envío de recibos por Gmail. La integración de IA tiene su estado separado en docs/ia/IMPLEMENTACION.md.
 
 El porcentaje de avance académico depende de la rúbrica de la docente. El alcance implementado va más allá de los dos primeros sprints, pero la base de datos online y la seguridad deben verificarse antes de presentar ese avance como integrado.
 

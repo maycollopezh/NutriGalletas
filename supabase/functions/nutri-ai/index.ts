@@ -3,7 +3,7 @@ import nodemailer from 'npm:nodemailer@10.3.1';
 import {PDFDocument,StandardFonts,rgb} from 'npm:pdf-lib@1.17.1';
 import {Buffer} from 'node:buffer';
 import {receiptContent,type Receipt} from '../receipt-email/handler.ts';
-import {createBrain,openAIIntent} from './brain.mjs';
+import {createBrain,openAIIntent,openAIAnswer} from './brain.mjs';
 import {day,formatReport} from './core.mjs';
 import {equal,phone,verifyEvent,audioUrl,proofFor,verifyProof} from './security.mjs';
 const env=(name:string)=>Deno.env.get(name)||'';
@@ -16,7 +16,7 @@ async function rpc(user:string,channel:string,action:string,data:unknown={}){
  const r=await admin.rpc('ia_servicio',{p_usuario:user,p_canal:channel,p_accion:action,p_datos:data});
  if(r.error)throw Error(r.error.code==='PGRST202'?'Falta activar la actualización 006 del asistente.':r.error.message);return r.data;
 }
-const brain=createBrain({rpc,interpret:(message:string,history:unknown[],catalog:unknown,now:Date)=>openAIIntent({key:env('OPENAI_API_KEY'),model:env('OPENAI_MODEL')||'gpt-5.4-mini',message,history,catalog,now})});
+const brain=createBrain({rpc,interpret:(message:string,history:unknown[],catalog:unknown,now:Date,context:unknown)=>openAIIntent({key:env('OPENAI_API_KEY'),model:env('OPENAI_MODEL')||'gpt-5.4-mini',message,history,catalog,now,context}),compose:(input:any)=>openAIAnswer({key:env('OPENAI_API_KEY'),model:env('OPENAI_MODEL')||'gpt-5.4-mini',...input})});
 async function webUser(req:Request){
  if(req.headers.get('origin')!==env('APP_ORIGIN'))throw Error('Acceso denegado');
  const token=req.headers.get('authorization')?.replace(/^Bearer /i,'')||'';
@@ -51,7 +51,7 @@ async function preflight(raw:string,req:Request){
  const state=await rpc(adminId,'whatsapp','estado');
  if(state.estado!=='bot'){await rpc(adminId,'whatsapp','historial',{role:'user',content:m.type==='text'?String(m.text?.body||'').slice(0,2000):'[Audio disponible en YCloud Inbox]'});return {ignored:true,humanAttention:true};}
  const p:any={sender:adminPhone,eventId:String(m.id),type:m.type,at:Date.now()};
- if(m.type==='text')p.text=String(m.text?.body||'').slice(0,2000);else if(m.type==='audio')p.audioUrl=audioUrl(m.audio?.link);else return {ignored:true};
+ if(m.type==='text')p.text=String(m.text?.body||'').slice(0,2000);else if(m.type==='audio')p.audioUrl=audioUrl(m.audio?.link);else {p.type='text';p.text='[Mensaje de tipo '+String(m.type).slice(0,30)+'. Explica brevemente que para esta solicitud necesito texto o audio, sin afirmar que viste su contenido.]';}
  p.proof=proofFor(p,env('MAKE_WEBHOOK_SECRET'));return p;
 }
 async function receiptAfterConfirmation(output:any){
@@ -78,8 +78,11 @@ async function incoming(p:any){
  else output=await brain({user:adminId,channel:'whatsapp',message:p.type==='audio'?String(p.transcript||'').slice(0,2000):p.text,eventId:p.eventId});
  output=await receiptAfterConfirmation(output);
  if(output.suppressed)return {ok:true,suppressed:true};
- const text=output.reply+(output.pending?`\n\nCONFIRMAR ${output.pending.id}${output.pending.qr?' QR VERIFICADO':''}\nO CANCELAR ${output.pending.id}`:'');
- return {...output,delivery:await sendWhatsApp(text,'respuesta:'+p.eventId)};
+ const text=output.reply+(output.pending?`\n\nResponde CONFIRMAR${output.pending.qr?' QR VERIFICADO':''} para guardar o CANCELAR para descartar.\nReferencia: ${output.pending.id}`:'');
+ const delivery=await sendWhatsApp(text,'respuesta:'+p.eventId);
+ // El mensaje real abre la ventana; despacha avisos vencidos sin exigir otro mensaje artificial.
+ if(delivery.accepted)await dispatch({includePdf:false}).catch(()=>null);
+ return {...output,delivery};
 }
 async function weeklyPdf(report:any,cutoff:Date){
  const pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold);let page:any,y=0;
@@ -90,10 +93,11 @@ async function weeklyPdf(report:any,cutoff:Date){
  write('Datos internos. Incluye el domingo solo hasta las 20:00. Compras recibidas y gastos operativos se registran por separado.');
  return Buffer.from(await pdf.save());
 }
-async function dispatch(){
+async function dispatch({includePdf=true}={}){
  if(env('IA_AUTOMATIONS_ENABLED')!=='true')return {paused:true};
  const now=new Date(),local=new Date(now.getTime()-4*3600000),today=day(now),agenda=await rpc(adminId,'web','agenda');
- const within=agenda.ultimo_entrante&&now.getTime()-Date.parse(agenda.ultimo_entrante)<24*3600000;
+ const age=now.getTime()-Date.parse(agenda.ultimo_entrante||'');
+ const within=Number.isFinite(age)&&age>=0&&age<23.8*3600000;
  const report=await rpc(adminId,'web','consulta',{desde:today,hasta:now.toISOString()});const results:any[]=[];
  const notify=async(text:string,key:string)=>{try{return await sendWhatsApp(text,key,!within);}catch{return {whatsappError:true,job:key};}};
  if(local.getUTCHours()>=8){
@@ -101,7 +105,8 @@ async function dispatch(){
   if(lows.length||soon.length)results.push(await notify('Aviso de tu tienda\n'+formatReport(report,'inventario')+'\n\n'+formatReport(report,'vencimientos'),'alerta:'+today));
  }
  for(const reminder of agenda.recordatorios)results.push(await notify('Recordatorio: '+reminder.texto,'recordatorio:'+reminder.id));
- if(local.getUTCDay()===0&&local.getUTCHours()>=20){
+ if(local.getUTCHours()>20||(local.getUTCHours()===20&&local.getUTCMinutes()>=15))results.push(await notify('Cierre diario NutriGalletas (corte 20:15)\n'+formatReport(await rpc(adminId,'web','consulta',{desde:today,hasta:today+'T20:15:00-04:00'}),'finanzas'),'cierre:'+today));
+ if(includePdf&&local.getUTCDay()===0&&local.getUTCHours()>=20){
   const cutoff=new Date(today+'T20:00:00-04:00'),monday=new Date(local);monday.setUTCDate(monday.getUTCDate()-6);
   const range={desde:monday.toISOString().slice(0,10),hasta:cutoff.toISOString()},weekly=await rpc(adminId,'web','consulta',range),key='pdf:'+today;
   const reserved=await rpc(adminId,'web','envio',{clave:key,tipo:'pdf_semanal'});

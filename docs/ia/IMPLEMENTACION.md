@@ -98,3 +98,22 @@ Documentación: https://developers.openai.com/api/docs/guides/function-calling ;
 El mensaje real del propietario llegó a Make (ejecución b6fa926e62034502aea9fced643e3c6d), pero preflight devolvió HTTP 400 y Make desactivó el escenario. Se encontró `Buffer` sin importar en security.mjs: el bundle mantenía una referencia global `Buffer`, mientras que el import del punto de entrada estaba renombrado a `Buffer2`. Se añadió el import explícito node:buffer y la comparación constante ahora verifica las longitudes de bytes. La función corregida fue desplegada en Supabase; no se ejecutaron pruebas.
 
 El HTTP preflight conserva autenticación, firma y filtros de tipo, pero Return error if HTTP request fails se cambió a No: un rechazo no debe desactivar el canal. La respuesta de error no tiene type=text/audio y no pasa el router. El cambio quedó guardado en Make. La reactivación está pendiente de resolver un mensaje en cola; no se borró ni reprocesó. La revisión automática bloqueó Process old data por la instrucción previa de no enviar mensajes. Se pidió autorización específica para procesar el mensaje real.
+
+
+## Ampliación conversacional — 15/11/2026
+
+Se compararon el texto facilitado por el propietario, `_language.mjs`, `_brain.mjs` y `_ycloud.mjs` de Panadería Don Juan con la implementación de NutriGalletas. La panadería permanece sin modificaciones. Sus tiendas, pedidos, recetas, producción, entregas y deudas no se incorporan a NutriGalletas: el alcance sigue siendo una tienda de galletas terminadas.
+
+- Prompt compartido explícito para conversación libre, saludos, explicaciones, reglas de inventario, seguimiento por producto y período, normalización y distinción entre pregunta y orden.
+- Esquema de interpretación ampliado con respuesta, aclaración, productos y varios temas. Para consultas, PostgreSQL conserva los agregados; una segunda llamada a OpenAI redacta sobre datos autorizados y cálculos del servidor. Si la redacción falla, se devuelve el reporte calculado. Cada llamada cuenta en el límite mensual de 300, por lo que una consulta redactada puede consumir dos solicitudes.
+- Las aclaraciones conservan una solicitud estructurada en el historial privado ya existente. Se renueva al continuar y se descarta al cambiar de tema; no requiere tablas ni permisos nuevos. Contexto temporal de seis mensajes y treinta minutos.
+- Consultas enfocadas por producto y varios temas; gastos generales no se asignan arbitrariamente a un producto ni se atribuye el neto de todo el negocio a una galleta.
+- WhatsApp acepta CONFIRMAR/CONFIRMO o CANCELAR/DESCARTAR para la única propuesta vigente del canal; conserva comandos con referencia. QR requiere CONFIRMAR QR VERIFICADO y validación SQL. Los eventos se reservan antes de resolver la propuesta, para que repetir un mensaje anterior no confirme una propuesta nueva.
+- Archivos no compatibles reciben una petición de texto/audio; no se afirma haber visto fotos, documentos o stickers. Audio conserva el flujo Make y máximo 2 MB.
+- Cada respuesta aceptada a un mensaje real revisa avisos vencidos mediante el despachador, sin emitir otra llamada de OpenAI para redactarlos. La agenda conserva sus claves únicas de envío. El PDF permanece en la agenda, no se genera dentro de una respuesta para evitar retrasarla.
+- Alertas desde 08:00; cierre diario nuevo con corte fijo 20:15; PDF dominical conserva 20:00. Un cierre posterior al corte no incluye ventas posteriores. No se añadieron preparación de producción ni entregas de panadería.
+- Ventana de texto: hasta 23,8 h desde el último entrante, con margen respecto de 24 h. Un saludo o consulta diaria del administrador la abre; una respuesta del bot no la extiende. Al cerrarse, no se fuerzan envíos libres.
+
+YCloud observado el 15/11: NutriGalletas +59162502582 conectado, calidad High. Plantilla nutrigalletas_aviso_administrador Spanish **Active-Quality pending**, categoría **Marketing** (Meta cambió la categoría). Se mantiene YCLOUD_TEMPLATE_APPROVED=false: los avisos fuera de ventana siguen bloqueados para no habilitar cargos de plantillas Marketing sin decisión del propietario. Dentro de ventana se usa texto. Esto es una elección de envío, no un fallo de aprobación.
+
+No se ejecutaron pruebas del sistema, llamadas de prueba a OpenAI, Run once ni mensajes de prueba. El propietario hará la validación funcional final. La preparación del bundle y el guardado/despliegue no equivalen a demostrar recepción de mensajes.
