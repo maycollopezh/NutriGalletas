@@ -157,3 +157,12 @@ En Asistente IA se añade «Atención de WhatsApp»: solicitudes pendientes, men
 **Plantillas pagadas deshabilitadas por instrucción expresa:** sendWhatsApp retorna outsideWindow antes de reservar o enviar cualquier plantilla. La aceptación de la plantilla por Meta o la bandera de entorno ya no basta para emitirla. No se eliminó la plantilla de YCloud; simplemente no se utiliza. El PDF por correo sigue independiente. Respuestas a clientes solo se producen por su mensaje entrante; el despachador no les envía promociones ni avisos automáticos.
 
 No se realizaron conversaciones, pruebas funcionales, envíos de prueba ni Run once. La validación del sistema la hará el propietario.
+
+
+### Aclaraciones de compra y nombre — 15/11/2026
+
+Tras la captura del propietario se corrigió el bucle que pedía nombre pese a haber recibido «Norbert». El servidor conserva los campos conocidos y el dato que está esperando, combina respuestas breves inequívocas (nombre o cantidad) sin delegarlas al modelo y prioriza producto, cantidad y finalmente nombre. Los datos guardados no se reemplazan por null de otra interpretación. Una conversación informativa ya no borra el parcial en curso; CANCELAR sí lo descarta.
+
+Ante «No entiendo», «¿A qué te refieres?» o una petición breve de ejemplo, explica el dato pendiente, su propósito y una respuesta ilustrativa. Los ejemplos no se incorporan como cantidades o nombres reales. Pedir nombre significa identificar una solicitud de compra, no crear cuenta. Una explicación sobre el resumen conserva la propuesta y recuerda CONFIRMAR/CANCELAR. Las preguntas generales siguen pasando por la conversación, sin convertir toda petición de explicación en una compra.
+
+No se ejecutaron pruebas funcionales ni se enviaron mensajes. Cambio preparado y desplegado para validación del propietario.
