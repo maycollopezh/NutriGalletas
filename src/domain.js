@@ -1,7 +1,7 @@
 export const ROLES = { administrador: 'Administrador', cajero: 'Cajero', almacen: 'Encargado de almacén' };
 export const PERMISSIONS = {
-  administrador: ['dashboard', 'usuarios', 'categorias', 'productos', 'proveedores', 'compras', 'inventario', 'planificacion', 'ventas', 'gastos', 'asistente'],
-  cajero: ['productos', 'ventas'],
+  administrador: ['dashboard', 'usuarios', 'categorias', 'productos', 'proveedores', 'compras', 'inventario', 'planificacion', 'ventas', 'gastos', 'asistente', 'pedidos'],
+  cajero: ['productos', 'ventas', 'pedidos'],
   almacen: ['categorias', 'productos', 'proveedores', 'compras', 'inventario', 'planificacion'],
 };
 export const money = value => new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' }).format(Number(value || 0));

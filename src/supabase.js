@@ -36,6 +36,11 @@ export class CloudStore {
     const data = {};
     await Promise.all(tables.map(async table => {
       if (table === 'parametros_inventario' && this.user.rol === 'cajero') { data[table] = []; return; }
+      if (table === 'lotes_inventario' && ['administrador','almacen'].includes(this.user.rol)) {
+        const result = await this.client.rpc('consultar_lotes_venta');
+        if (result.error) throw result.error;
+        data[table] = result.data; return;
+      }
       if (table === 'lotes_inventario' && this.user.rol === 'cajero') {
         let result = await this.client.rpc('consultar_lotes_venta');
         if(result.error?.code==='PGRST202') {data.mejoras_pendientes=true;result=await this.client.rpc('consultar_existencias');}
