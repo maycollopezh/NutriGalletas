@@ -1,59 +1,109 @@
 # NutriGalletas
 
-Sistema administrativo de una tienda de galletas nutritivas de La Paz, Bolivia. Proyecto compartido entre Programación III e Investigación Operativa II, UNIFRANZ, gestión 2026.
+Sistema web de ventas, inventario, planificación y atención por WhatsApp para una tienda de galletas de La Paz, Bolivia. Proyecto de Programación III e Investigación Operativa II.
 
-## Abrir la aplicación
+## Empieza aquí
 
-Necesitas Node.js. En esta carpeta ejecuta:
+- Para abrir el sistema publicado: [NutriGalletas](https://nutrigalletas-lp.netlify.app/).
+- Para trabajar con el código: abre esta carpeta completa en VS Code.
+- Para ejecutar una copia local: `npm run dev` y abre `http://127.0.0.1:4317`.
+- Para saber cómo funciona la IA: [implementación y límites](docs/ia/IMPLEMENTACION.md).
+- Para configurar la base de datos: [guía de Supabase](docs/configuracion/CONFIGURAR_SUPABASE.md).
 
-```sh
-npm run dev
+Node.js es necesario para los comandos. La interfaz usa HTML, CSS y JavaScript sin un framework ni una compilación obligatoria. `src/config.js` selecciona el modo conectado o la demostración con datos ficticios. Una copia local en modo conectado utiliza la misma base de datos que tenga configurada; no es un entorno de prueba aislado.
+
+## Qué hay en cada carpeta
+
+```text
+PROYECTO/
+├── index.html                 Página que abre el navegador
+├── src/                       Aplicación que usa el personal
+│   ├── app.js                 Inicio, navegación y coordinación de pantallas
+│   ├── config.js              Configuración pública y modo de funcionamiento
+│   ├── assets/                Fotografías y QR de cobro
+│   ├── styles/                Estilos de la interfaz
+│   ├── domain/                Reglas de ventas, stock e Investigación Operativa
+│   ├── data/                  Datos y almacenamiento de demostración
+│   ├── services/              Conexión con Supabase y carga de imágenes
+│   ├── features/              Asistente, pedidos, atención y otras pantallas
+│   └── ui/                    Componentes visuales compartidos
+├── supabase/                  Todo lo que se ejecuta en el servidor
+│   ├── migrations/           Cambios SQL numerados de estructura y reglas
+│   ├── seeds/                Datos ficticios, separados de las migraciones
+│   ├── functions/            Autenticación, correos y cerebro de la IA
+│   └── config.toml           Configuración de funciones
+├── scripts/                   Abrir localmente y preparar archivos de publicación
+├── tests/                     Pruebas existentes, separadas por tipo
+│   ├── unit/                 Reglas y módulos individuales
+│   ├── integration/          Base de datos local y consultas de revisión
+│   └── manual/               Páginas auxiliares para revisión manual
+└── docs/                      Guías y material de las materias
+    ├── academico/            Alcance, observaciones, informe y exposición
+    ├── arquitectura/         Modelo de datos e inventarios
+    ├── configuracion/        Supabase, imágenes y publicación
+    ├── ia/                   Asistente, WhatsApp y automatizaciones
+    └── VALIDACIONES.md       Registro histórico de verificaciones anteriores
 ```
 
-Abre http://127.0.0.1:4317. No se requiere instalar paquetes para la demostración. La interfaz usa HTML, CSS y JavaScript; las fuentes externas son opcionales y tienen alternativas locales.
+`node_modules/` contiene dependencias instaladas y `dist/` es una copia generada para publicar. No se editan ni se guardan en Git. Los archivos de configuración que empiezan con punto mantienen el mismo formato y las exclusiones en todos los editores.
 
-## Estado de esta entrega
+## Dónde cambiar cada cosa
 
-- Sprint 1: estructura, tres perfiles, usuarios y catálogo implementados en demostración; esquema y funciones de Supabase preparados.
-- Sprint 2: compras recibidas, lotes, ventas, descuento de inventario y comprobantes internos implementados en demostración.
-- Sprint 3: gastos, dashboard, EOQ, punto de pedido, reserva y cobertura implementados. Mínimo automático y demanda diaria conectados a la base de datos. ABC no forma parte de este avance.
-- Sprint 4: asistente compartido web/WhatsApp, confirmaciones, recordatorios, alertas y PDF semanal implementados. Ver estado y límites vigentes en docs/ia/IMPLEMENTACION.md; la validación funcional final la realiza el propietario.
+| Necesidad | Archivo o carpeta |
+| --- | --- |
+| Navegación, inicio o coordinación general | `src/app.js` |
+| Pantalla de pedidos para recoger | `src/features/orders.js` |
+| Atención humana por cliente | `src/features/whatsapp-inbox.js` |
+| Asistente de la web | `src/features/assistant.js` |
+| Planificación de reposición | `src/domain/inventory.js` y `src/features/inventory-view.js` |
+| Reglas de ventas y permisos | `src/domain/` y SQL de `supabase/migrations/` |
+| Consultas y sesiones de Supabase | `src/services/supabase.js` |
+| Colores y aspecto general | `src/styles/theme.css` |
+| Estilos comunes y componentes | `src/styles/base.css` |
+| Estilos del asistente, pedidos y atención | `src/styles/assistant.css` |
+| Comportamiento y seguridad de la IA | `supabase/functions/nutri-ai/` |
+| Correo y acceso | Las funciones correspondientes de `supabase/functions/` |
 
-**Supabase está creado y conectado.** La migración 004 se aplicó al proyecto NutriGalletas el 6 de noviembre de 2026 y devolvió Success en el editor SQL. El modo de demostración permanece separado y guarda datos ficticios en este navegador. El propietario confirmó el envío de recibos por Gmail. La integración de IA tiene su estado separado en docs/ia/IMPLEMENTACION.md.
+Los estilos se cargan en el orden base → tema → asistente. Se mantienen separados para conservar la apariencia existente; no son tres copias intercambiables. Las migraciones también se conservan: cada una representa un incremento distinto. No vuelvas a aplicar todo el SQL ni los datos ficticios sobre producción por haber cambiado de carpeta.
 
-El porcentaje de avance académico depende de la rúbrica de la docente. El alcance implementado va más allá de los dos primeros sprints, pero la base de datos online y la seguridad deben verificarse antes de presentar ese avance como integrado.
+## Comandos
 
-## Funciones disponibles
+```sh
+npm ci                 # Instalar las dependencias de desarrollo fijadas
+npm run dev            # Abrir el servidor local
+npm run build          # Regenerar dist/ para Netlify
+npm run format         # Ordenar el formato del código
+npm run format:check   # Comprobar únicamente el formato
+```
 
-Ocho módulos principales: usuarios, categorías, productos, proveedores, compras, lotes/inventario, ventas y gastos. Dashboard con filtros de fechas, ingresos, costo histórico vendido, gastos y resultado neto estimado. Comprobantes imprimibles, también guardables como PDF desde el navegador.
+Prettier está fijado en el proyecto. Usa dos espacios, punto y coma y un ancho objetivo de 90 caracteres. Las plantillas HTML incrustadas llevan `/* HTML */` para que también se distribuyan de forma legible. URLs, datos SVG y otras cadenas indivisibles pueden superar ese ancho.
 
-Los datos de ejemplo son ficticios: precios en Bs, proveedores marcados como ficticios, direcciones de La Paz, pagos en efectivo, QR y tarjeta. La unidad de inventario es un paquete de 100 g. No hay delivery, producción, facturación fiscal ni acceso de clientes.
-
-## Documentación
-
-- [Alcance y cuatro sprints](docs/ALCANCE_Y_SPRINTS.md).
-- [Modelo relacional para revisión docente](docs/MODELO_RELACIONAL.md).
-- [Crear y configurar Supabase](docs/CONFIGURAR_SUPABASE.md).
-- [Validación y pruebas](docs/VALIDACION.md).
-- [Fase futura de IA](docs/IA_PLANIFICADA.md).
-- [GitHub y Netlify](docs/GITHUB_NETLIFY.md).
-
-## Pruebas
+Las pruebas existentes se conservaron y sus rutas se actualizaron. Estos comandos son para cuando decidas ejecutarlas:
 
 ```sh
 npm test
+npm run test:db
+npm run test:inventory:db
+npm run test:observations:db
 ```
 
-Las pruebas verifican reglas de venta, vencimientos, stock, costos históricos, permisos de demostración y balance. La validación SQL usa opcionalmente PGlite para ejecutar PostgreSQL localmente; está descrita en la documentación y no sustituye las pruebas finales sobre Supabase.
+Las páginas de `tests/manual/` son herramientas de revisión y pueden realizar operaciones según sus controles. No se publican en Netlify. Las notas de [validaciones históricas](docs/VALIDACIONES.md) describen fechas anteriores, no una garantía del estado actual.
 
-## Seguridad y configuración
+## Documentación y entrega
 
-En `src/config.js` solo van la URL de Supabase y su clave pública. Las claves de servicio, de OpenAI, YCloud y correo se guardan únicamente como secretos del servidor/Make. Las contraseñas no se almacenan en tablas de la aplicación ni en el repositorio.
+- [Alcance y sprints](docs/academico/ALCANCE_Y_SPRINTS.md).
+- [Observaciones del docente](docs/academico/OBSERVACIONES_DOCENTE.md).
+- [Modelo relacional](docs/arquitectura/MODELO_RELACIONAL.md).
+- [Modelos de inventario](docs/arquitectura/MODELOS_INVENTARIO.md).
+- [Configuración de Supabase y fotografías](docs/configuracion/CONFIGURAR_SUPABASE.md).
+- [GitHub y Netlify](docs/configuracion/GITHUB_NETLIFY.md).
+- [Implementación de IA y WhatsApp](docs/ia/IMPLEMENTACION.md).
+- [Guion de exposición](docs/academico/exposicion/Guion_exposicion_4_integrantes.md).
 
-La creación de cuentas, recuperación y límites de intentos están preparados en funciones de Supabase. El correo de una cuenta existente permanece fijo. Antes de usar datos reales hay que completar la configuración y las pruebas de permisos y recuperación.
+Los roles actuales siguen siendo administrador, cajero y almacén. La separación CEO / IT / usuario común quedó pendiente por decisión del propietario y esta reorganización no la implementa. No hay delivery, fabricación ni facturación fiscal. Las pruebas completas de los últimos incrementos corresponden al propietario.
 
+## Seguridad y publicación
 
-## Observaciones de Investigación Operativa II
+En `src/config.js` solo van la URL y la clave pública de Supabase. Credenciales de servicio, OpenAI, YCloud, Make y correo permanecen en sus servicios, nunca en el navegador ni el repositorio. El QR conserva `src/assets/qr-ganadero.png`, también usado por el asistente desplegado.
 
-Cantidades y despacho por lote (FEFO), mínimos calculados automáticamente, demanda diaria, efectivo recibido/vuelto, permisos y recibos por correo: ver [detalle y activación](docs/OBSERVACIONES_DOCENTE.md). La fuente vigente del mínimo es el cálculo de planificación, no el campo manual histórico del producto.
-# NutriGalletas
+Netlify publica únicamente `index.html` y `src/` mediante `scripts/build.mjs`. La reorganización local no cambia por sí misma lo desplegado en Supabase o Netlify. Los archivos SQL y de funciones se editan aquí y se despliegan por separado. El documento de IA distingue implementación, publicación y verificación funcional.

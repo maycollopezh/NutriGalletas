@@ -1,0 +1,259 @@
+.assistant-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  gap: 24px;
+}
+.assistant-chat {
+  padding: 24px;
+  min-width: 0;
+}
+.assistant-chat .panel-head {
+  padding: 0 0 20px;
+}
+.assistant-chat h1 {
+  font-size: clamp(24px, 3vw, 38px);
+  margin: 8px 0;
+}
+.assistant-messages {
+  height: 430px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 4px;
+}
+.assistant-bubble {
+  max-width: 90%;
+  background: var(--surface, #202b31);
+  padding: 16px;
+  border: 1px solid #5b62664d;
+  border-radius: 4px 18px 18px;
+}
+.assistant-bubble.mine {
+  align-self: flex-end;
+  background: #d96d1924;
+  border-color: #f392544d;
+  border-radius: 18px 4px 18px 18px;
+}
+.assistant-bubble small {
+  color: #ffa35c;
+  font-weight: 700;
+}
+.assistant-bubble p,
+.assistant-confirm p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+  line-height: 1.65;
+}
+.assistant-welcome {
+  text-align: center;
+  margin: auto;
+  max-width: 420px;
+}
+.assistant-welcome h2 {
+  color: #ffa35c;
+}
+.assistant-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.assistant-guide .panel {
+  padding: 24px;
+}
+.assistant-guide h2 {
+  font-size: 20px;
+}
+.assistant-suggestion {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  margin: 10px 0;
+  background: transparent;
+  border-color: #73624c66;
+  font-weight: 500;
+}
+.assistant-suggestion span {
+  color: #ff923c;
+}
+.assistant-confirm {
+  padding: 20px;
+  background: #ff8e2420;
+  border: 1px solid #ff923c;
+  border-radius: 16px;
+  margin: 16px 0;
+}
+.assistant-confirm .toolbar {
+  margin-top: 16px;
+}
+.assistant-qr-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.assistant-qr-check input {
+  width: 20px;
+  height: 20px;
+}
+#assistant-form {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 20px;
+}
+#assistant-form textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+}
+.assistant-guide small {
+  line-height: 1.6;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+@media (max-width: 1100px) {
+  .assistant-layout {
+    grid-template-columns: 1fr;
+  }
+  .assistant-guide {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .assistant-chat {
+    padding: 16px;
+  }
+  .assistant-guide {
+    display: flex;
+  }
+  .assistant-messages {
+    height: 400px;
+  }
+  .assistant-bubble {
+    max-width: 100%;
+  }
+  #assistant-form {
+    flex-direction: column;
+  }
+  .assistant-confirm .toolbar {
+    flex-wrap: wrap;
+  }
+}
+
+.assistant-customers article {
+  border-top: 1px solid #6666;
+  padding: 16px 0;
+  margin-top: 12px;
+}
+.assistant-customers h3 {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.assistant-customers p {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+.assistant-customers button {
+  margin-top: 12px;
+  white-space: normal;
+}
+.assistant-customers small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.pickup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+  gap: 20px;
+}
+.pickup-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.pickup-card p {
+  line-height: 1.6;
+}
+.pickup-card small {
+  overflow-wrap: anywhere;
+}
+.pickup-card ul {
+  padding-left: 22px;
+  line-height: 1.8;
+}
+.pickup-total {
+  font-size: 24px;
+  font-weight: 700;
+}
+.pickup-proof {
+  border-top: 1px solid #8885;
+  padding-top: 14px;
+}
+.pickup-payment-check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  line-height: 1.6;
+}
+.pickup-payment-check input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.pickup-config {
+  margin-top: 24px;
+  padding: 24px;
+}
+.pickup-config summary {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+}
+.pickup-config form {
+  margin-top: 20px;
+}
+.pickup-config fieldset label {
+  display: block;
+  margin: 8px 0;
+}
+.pickup-config input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+}
+
+#whatsapp-inbox .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+#whatsapp-inbox h2 {
+  margin: 24px 0 16px;
+}
+#whatsapp-inbox .whatsapp-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#whatsapp-inbox details summary {
+  cursor: pointer;
+}
+#whatsapp-pause-form {
+  display: grid;
+  gap: 14px;
+  max-width: 650px;
+}
+#whatsapp-inbox h3 {
+  overflow-wrap: anywhere;
+}

@@ -61,7 +61,7 @@ Responses usa herramientas de esquema estricto y `store:false`; se envían el me
 
 ## Instalación
 
-1. Aplicar `supabase/006_asistente_ia.sql` después de 001, 003 y 004. No volver a cargar 002_seed en la nube. La migración es repetible y conserva datos.
+1. Aplicar `supabase/migrations/006_asistente_ia.sql` después de 001, 003 y 004. No volver a cargar 002_seed en la nube. La migración es repetible y conserva datos.
 2. Desplegar `supabase/functions/nutri-ai/` con su configuración. El punto de entrada mixto tiene `verify_jwt=false` porque recibe webhooks; cada ruta verifica su autenticación propia. No cambiar receipt-email ni desactivar su JWT.
 3. Si se usa el editor del dashboard, generar archivo único con `node scripts/build-ai-function.mjs`; pegar `/tmp/nutrigalletas-ai/index.ts`. El generador no incluye valores secretos.
 4. Adaptar la copia de Make: todos los HTTP al proyecto NutriGalletas, `nutri-ai/preflight` y `nutri-ai/message`; reemplazar Authorization de proyecto y X-Make-Secret. Preflight debe recibir cuerpo JSON CRUDO y YCloud-Signature. Mantener las expresiones y filtros de tipo de mensaje, revisar audio 2 MB/redirecciones. La salida preflight conserva sender/eventId/type/at/text/audioUrl/proof.
@@ -86,9 +86,9 @@ El PDF se construye con pdf-lib y se envía por el SMTP Gmail ya configurado, de
 
 `npm test`
 
-`PGLITE_MODULE_PATH=/tmp/nutri-db/node_modules/@electric-sql/pglite/dist/index.js node tests/assistant-sql.mjs`
+`PGLITE_MODULE_PATH=/tmp/nutri-db/node_modules/@electric-sql/pglite/dist/index.js node tests/integration/assistant-sql.mjs`
 
-Si la dependencia está instalada en el proyecto, basta `node tests/assistant-sql.mjs`. Son bases efímeras, no modifican la nube.
+Si la dependencia está instalada en el proyecto, basta `node tests/integration/assistant-sql.mjs`. Son bases efímeras, no modifican la nube.
 
 Documentación: https://developers.openai.com/api/docs/guides/function-calling ; https://developers.openai.com/api/docs/models/gpt-5.4-mini ; https://ycloud.readme.io/reference/configure-webhooks ; https://docs.ycloud.com/reference/whatsapp_message-send-directly .
 
