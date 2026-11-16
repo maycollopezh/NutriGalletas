@@ -23,7 +23,7 @@ const labels = {
   pendiente_aprobacion: 'Solicitud pendiente de aprobación',
   esperando_comprobante: 'Esperando comprobante · reserva 10 min',
   leyendo_comprobante: 'Leyendo comprobante',
-  pago_por_verificar: 'Falta verificar abono',
+  pago_por_verificar: 'Comprobantes recibidos · revisar importe',
   pagado: 'Pagado · por preparar',
   listo: 'Preparado para recoger',
   entregado: 'Entregado',
@@ -94,7 +94,47 @@ function card(o) {
         .map((i) => /* HTML */ `<li>${esc(i.cantidad)} paquetes de ${esc(i.nombre)}</li>`)
         .join('')}
     </ul>
-    <p class="pickup-total">${money(o.total)}</p>
+    <p class="pickup-total">Total: ${money(o.total)}</p>
+    ${o.pago_revision && o.pago_revision !== 'sin_comprobante'
+      ? /* HTML */ `<div class="pickup-proof">
+          <h3>
+            ${esc(
+              {
+                parcial: 'Pago incompleto',
+                exacto: 'Importe completo leído',
+                excedente: 'Posible excedente · atención humana',
+                revision: 'Lectura dudosa · atención humana',
+              }[o.pago_revision] || 'Revisión de pago',
+            )}
+          </h3>
+          <p>
+            Importe leído acumulado: ${money(o.total_comprobantes || 0)}.
+            ${o.pago_revision === 'parcial'
+              ? 'Falta completar ' +
+                money(Math.max(0, Number(o.total) - Number(o.total_comprobantes))) +
+                '. La IA solicita únicamente esa diferencia con el QR.'
+              : ''}
+            ${o.pago_revision === 'excedente'
+              ? 'Posible cambio: ' +
+                money(Number(o.total_comprobantes) - Number(o.total)) +
+                '. Revisar los abonos y coordinar con el cliente en Atención de WhatsApp.'
+              : ''}
+          </p>
+          <small
+            >La lectura de una imagen no confirma dinero recibido. No solicitar otro pago
+            si la lectura es dudosa.</small
+          >
+        </div>`
+      : ''}
+    ${Number(o.importe_banco_verificado) > Number(o.total)
+      ? /* HTML */ `<p>
+          <strong
+            >Cambio por coordinar:
+            ${money(Number(o.importe_banco_verificado) - Number(o.total))}</strong
+          >. Abono verificado: ${money(o.importe_banco_verificado)}. Coordinar y dejar
+          constancia con el cliente desde Atención de WhatsApp.
+        </p>`
+      : ''}
     <small>Referencia: ${esc(o.id)}</small>${active
       ? /* HTML */ `<p>
           ${['pago_por_verificar', 'leyendo_comprobante'].includes(o.estado)
@@ -107,32 +147,86 @@ function card(o) {
                 time(o.reserva_hasta) +
                 '.'}
         </p>`
-      : ''}${o.venta_id
-      ? '<p>Pago confirmado y venta registrada.</p>'
-      : ''}${o.comprobante_ruta
+      : ''}${o.venta_id ? '<p>Pago confirmado y venta registrada.</p>' : ''}${(
+      o.comprobantes || []
+    ).length
       ? /* HTML */ `<div class="pickup-proof">
-          <h3>Comprobante</h3>
-          <p>
-            Importe leído:
-            ${o.lectura?.importe == null ? 'No legible' : money(o.lectura.importe)}<br />Moneda:
-            ${esc(o.lectura?.moneda)}<br />Destino: ${esc(o.lectura?.destino)}
-          </p>
-          <p>${esc(o.lectura?.observacion || '')}</p>
-          <button data-order="archivo" data-id="${esc(o.id)}">Ver comprobante</button
-          ><small>La imagen no acredita un abono bancario.</small>
+          <h3>Comprobantes del pedido</h3>
+          ${o.comprobantes
+            .map(
+              (c, n) =>
+                /* HTML */ `<p>
+                    Comprobante ${n + 1}:
+                    ${c.importe == null ? 'Importe no legible' : money(c.importe)} ·
+                    ${c.contabilizable
+                      ? 'Incluido en la suma preliminar'
+                      : 'Revisión manual necesaria'}<br />${esc(
+                      c.lectura?.observacion || '',
+                    )}
+                  </p>
+                  <button
+                    data-order="archivo"
+                    data-id="${esc(o.id)}"
+                    data-proof="${esc(c.id)}"
+                  >
+                    Abrir comprobante ${n + 1}
+                  </button>`,
+            )
+            .join('')}<small>Acceso privado para personal autorizado.</small>
         </div>`
-      : ''}${o.estado === 'pago_por_verificar'
-      ? /* HTML */ `<label class="pickup-payment-check"
-            ><input type="checkbox" id="abono-${esc(o.id)}" /> Verifiqué en el banco el
-            abono de ${money(o.total)} a nuestra cuenta.</label
-          ><button
+      : o.comprobante_ruta
+        ? /* HTML */ `<div class="pickup-proof">
+            <h3>Comprobante</h3>
+            <p>
+              Importe leído:
+              ${o.lectura?.importe == null ? 'No legible' : money(o.lectura.importe)}<br />Moneda:
+              ${esc(o.lectura?.moneda)}<br />Destino: ${esc(o.lectura?.destino)}
+            </p>
+            <p>${esc(o.lectura?.observacion || '')}</p>
+            <button data-order="archivo" data-id="${esc(o.id)}">Ver comprobante</button
+            ><small>La imagen no acredita un abono bancario.</small>
+          </div>`
+        : ''}${o.estado === 'pago_por_verificar'
+      ? /* HTML */ `<details class="pickup-payment-check">
+          <summary>
+            Verificar abonos en el
+            banco${o.pago_revision === 'parcial'
+              ? ' · la lectura indica un faltante'
+              : ''}
+          </summary>
+          <p>
+            Solo confirma si comprobaste el total completo en el banco. La suma preliminar
+            de imágenes puede requerir corrección humana.
+          </p>
+          <div>
+            <label
+              >Importe total verificado en el banco (Bs)
+              <input
+                type="number"
+                min="${esc(o.total)}"
+                max="99999999"
+                step="0.01"
+                id="importe-banco-${esc(o.id)}"
+                placeholder="Suma de los abonos reales"
+            /></label>
+            <label
+              ><input type="checkbox" id="excedente-${esc(o.id)}" /> Si existe excedente,
+              revisé el cambio pendiente y lo coordinaré con el cliente.</label
+            >
+            <label
+              ><input type="checkbox" id="abono-${esc(o.id)}" /> Verifiqué en el banco el
+              importe indicado en nuestra cuenta (debe cubrir ${money(o.total)}).</label
+            >
+          </div>
+          <button
             class="primary"
             data-order="confirmar_pago"
             data-id="${esc(o.id)}"
             ${busy ? 'disabled' : ''}
           >
             Confirmar pago y registrar venta
-          </button>`
+          </button>
+        </details>`
       : ''}${o.estado === 'pendiente_aprobacion'
       ? /* HTML */ `<button class="primary" data-order="aprobar" data-id="${esc(o.id)}">
           Aprobar, reservar y enviar QR
@@ -317,9 +411,22 @@ document.addEventListener(
       )
     )
       return;
+    const bankAmount = Number(document.querySelector('#importe-banco-' + id)?.value);
+    const excessReviewed = document.querySelector('#excedente-' + id)?.checked === true;
+    if (
+      action === 'confirmar_pago' &&
+      (!Number.isFinite(bankAmount) || bankAmount <= 0)
+    ) {
+      notice = 'Indica cuánto llegó realmente al banco antes de confirmar.';
+      paint();
+      return;
+    }
     request({
       action,
       id,
+      comprobante_id: button.dataset.proof || null,
+      importe_banco_verificado: action === 'confirmar_pago' ? bankAmount : null,
+      excedente_revisado: excessReviewed,
       abono_verificado: verified,
       sin_abono_verificado: action === 'rechazar',
     });

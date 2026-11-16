@@ -1,4 +1,5 @@
 import { normalize, resolveEntity, money, day } from './core.mjs';
+import { pickupTime } from './pickup-time.mjs';
 import { customerText } from './presentation.mjs';
 const tool = {
   type: 'function',
@@ -325,12 +326,18 @@ export function createPublicBrain({
         orders
       ) {
         pedido = await orders(sender, 'actual');
-        if (pedido.estado !== 'esperando_comprobante')
+        if (
+          pedido.estado !== 'esperando_comprobante' &&
+          !(pedido.estado === 'pago_por_verificar' && pedido.pago_revision === 'parcial')
+        )
           reply =
             'No hay una reserva esperando comprobante. Si ya lo enviaste, espera la verificación del banco y no vuelvas a pagar.';
         else {
           enviar_qr = true;
-          reply = `Pago para tu reserva ${pedido.id}\n\nImporte exacto: ${money(pedido.total)}\nReserva hasta: ${new Date(pedido.reserva_hasta).toLocaleTimeString('es-BO', { timeZone: 'America/La_Paz' })}. Envía la imagen del comprobante dentro del plazo.`;
+          reply =
+            pedido.pago_revision === 'parcial'
+              ? `El pedido suma ${money(pedido.total)}. Se leyeron ${money(pedido.total_comprobantes)} en comprobantes distintos. Falta ${money(pedido.faltante)}. Paga solo esa diferencia y envía el nuevo comprobante; conservamos tu reserva durante la revisión.`
+              : `Pago para tu reserva ${pedido.id}\n\nImporte exacto: ${money(pedido.total)}\nReserva hasta: ${new Date(pedido.reserva_hasta).toLocaleTimeString('es-BO', { timeZone: 'America/La_Paz' })}. Envía la imagen del comprobante dentro del plazo.`;
         }
       } else if (asksClarification(message)) {
         reply = context.propuesta
@@ -394,7 +401,20 @@ export function createPublicBrain({
                 .trim()
                 .match(/^(?:quiero\s+)?(\d+)\s*(?:paquetes?)?$/i)
             : null;
-        if (selected)
+        const pickupAnswer =
+          (previous.items || []).length &&
+          (previous.esperando?.campo === 'recogida' ||
+            /(?:a las|\d{1,2}:\d{2}|\d\s*[ap]\.?m)/i.test(message || ''))
+            ? pickupTime(message, previous.horario || {}, now())
+            : null;
+        if (pickupAnswer)
+          intent = {
+            accion: 'solicitud',
+            nombre: previous.nombre,
+            fecha_recogida: pickupAnswer.value || null,
+            items: previous.items || [],
+          };
+        else if (selected)
           intent = {
             accion: 'solicitud',
             nombre: previous.nombre,
@@ -471,8 +491,17 @@ export function createPublicBrain({
             previous.nombre ||
             intent.nombre?.trim() ||
             null;
-          const pickup = intent.fecha_recogida || previous.fecha_recogida || null;
-          context = { parcial: { nombre: name, items: merged, fecha_recogida: pickup } };
+          const pickup = pickupAnswer
+            ? pickupAnswer.value || null
+            : intent.fecha_recogida || previous.fecha_recogida || null;
+          context = {
+            parcial: {
+              nombre: name,
+              items: merged,
+              fecha_recogida: pickup,
+              horario: pickupAnswer?.slot || previous.horario || {},
+            },
+          };
           let missing = null;
           for (const item of merged) {
             try {
@@ -500,7 +529,9 @@ export function createPublicBrain({
           } else if (!missing && !pickup) {
             missing = { campo: 'recogida' };
             const cfg = catalog.configuracion_recogida;
-            reply = `¿Qué día y a qué hora vendrás a recoger? Solo recogida en tienda. Horario: ${scheduleLabel(cfg)}. Necesitamos ${cfg?.anticipacion_min ?? 30} minutos de anticipación. Por ejemplo: «Mañana a las 10:00».`;
+            reply =
+              pickupAnswer?.question ||
+              `¿Qué día y a qué hora vendrás a recoger? Solo recogida en tienda. Horario: ${scheduleLabel(cfg)}. Necesitamos ${cfg?.anticipacion_min ?? 30} minutos de anticipación. Por ejemplo: «Mañana a las 10:00».`;
           } else if (
             !missing &&
             !validPickup(pickup, catalog.configuracion_recogida, now())

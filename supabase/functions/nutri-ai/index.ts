@@ -373,12 +373,24 @@ async function incoming(p: any) {
         'NutriGalletas · Reserva ' +
           output.pedido.id +
           '\nImporte exacto: Bs ' +
-          Number(output.pedido.total).toFixed(2) +
-          '\nEl cliente debe introducir este importe en su banco. Envía el comprobante antes de ' +
-          new Date(output.pedido.reserva_hasta).toLocaleTimeString('es-BO', {
-            timeZone: 'America/La_Paz',
-          }),
-        'qr-pedido:' + output.pedido.id,
+          Number(
+            output.pedido.pago_revision === 'parcial'
+              ? output.pedido.faltante
+              : output.pedido.total,
+          ).toFixed(2) +
+          (output.pedido.pago_revision === 'parcial'
+            ? '\nPaga únicamente este faltante. Envía el comprobante del complemento. La reserva sigue retenida durante la revisión.'
+            : '\nEl cliente debe introducir este importe en su banco. Envía el comprobante antes de ') +
+          (output.pedido.pago_revision === 'parcial'
+            ? ''
+            : new Date(output.pedido.reserva_hasta).toLocaleTimeString('es-BO', {
+                timeZone: 'America/La_Paz',
+              })),
+        'qr-pedido:' +
+          output.pedido.id +
+          (output.pedido.pago_revision === 'parcial'
+            ? ':faltante:' + output.pedido.faltante + ':' + p.eventId
+            : ''),
         false,
         sender,
         env('APP_ORIGIN') + '/src/assets/qr-ganadero.png',
@@ -436,7 +448,10 @@ async function customerReceipt(p: any) {
   }
   let order: any,
     reply,
-    receiptPath: string | null = null;
+    receiptPath: string | null = null,
+    receiptHash: string | null = null,
+    result: any = null,
+    sendQr = false;
   try {
     order = await ordersRpc(p.sender, 'actual');
     if (
@@ -453,6 +468,11 @@ async function customerReceipt(p: any) {
       key: env('OPENAI_API_KEY'),
       model: env('OPENAI_MODEL') || 'gpt-5.4-mini',
       onDownloaded: async (file: any) => {
+        receiptHash = Array.from(
+          new Uint8Array(await crypto.subtle.digest('SHA-256', file.bytes)),
+        )
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
         receiptPath = order.id + '/' + crypto.randomUUID() + '.' + file.extension;
         const upload = await admin.storage
           .from('comprobantes-pedidos')
@@ -463,28 +483,101 @@ async function customerReceipt(p: any) {
         }
       },
     });
-    const result = await ordersRpc(p.sender, 'comprobante_guardar', {
+    result = await ordersRpc(p.sender, 'comprobante_guardar', {
       id: order.id,
       ruta: receiptPath,
       lectura: image.reading,
+      huella: receiptHash,
     });
-    const matched =
-      image.reading.importe === Number(order.total) &&
-      image.reading.moneda === 'BOB' &&
-      image.reading.legible &&
-      image.reading.destino !== 'no_coincide';
-    reply =
-      '¡Gracias! Recibimos tu comprobante a tiempo y estamos verificando que el pago se haya realizado correctamente.\n\n' +
-      (matched
-        ? 'El importe leído coincide con el pedido.'
-        : 'La lectura automática necesita revisión; un cajero o administrador comprobará los datos y el abono. No vuelvas a pagar.') +
-      ' Conservamos tus productos reservados durante la revisión.\n\nTe avisaremos cuando el abono esté confirmado. Referencia: ' +
-      result.id;
+    // Aviso específico, sin despachar inventario ni habilitar plantillas de pago.
+    if (result.pago_revision !== 'parcial') {
+      const agenda = await rpc(adminId, 'web', 'agenda').catch(() => null);
+      const age = Date.now() - Date.parse(agenda?.ultimo_entrante || '');
+      if (
+        env('IA_AUTOMATIONS_ENABLED') === 'true' &&
+        Number.isFinite(age) &&
+        age >= 0 &&
+        age < 23.8 * 3600000
+      ) {
+        const reason =
+          result.pago_revision === 'exacto'
+            ? 'Importe completo leído: verificar los abonos en el banco.'
+            : result.pago_revision === 'excedente'
+              ? 'Posible excedente de Bs ' +
+                Number(result.excedente).toFixed(2) +
+                ': revisar abonos y coordinar cambio en Atención de WhatsApp.'
+              : 'Lectura dudosa: revisar comprobante y abono con atención humana.';
+        await sendWhatsApp(
+          reason +
+            '\n\nCliente: ' +
+            order.nombre +
+            '\nPedido: ' +
+            order.id +
+            '\nRevisa Pedidos para recoger.',
+          'pedido-aviso:' +
+            order.id +
+            ':' +
+            result.estado +
+            ':' +
+            result.pago_revision +
+            ':' +
+            result.total_comprobantes,
+        ).catch(() => null);
+      }
+    }
+    const bs = (amount: number) => 'Bs ' + Number(amount).toFixed(2).replace('.', ',');
+    const summary =
+      '\n\nTotal del pedido: ' +
+      bs(result.total) +
+      '\nImporte leído acumulado: ' +
+      bs(result.total_comprobantes);
+    const duplicate = result.comprobante_duplicado
+      ? 'Este comprobante ya estaba registrado; no lo contamos dos veces.\n\n'
+      : '';
+    if (result.pago_revision === 'parcial') {
+      sendQr = true;
+      reply =
+        duplicate +
+        'El importe leído no cubre todavía el pedido.' +
+        summary +
+        '\nFalta: ' +
+        bs(result.faltante) +
+        '\n\nTe reenvío el QR. Paga únicamente el faltante y envía el nuevo comprobante. ' +
+        'Conservamos la reserva mientras se completa y revisa el pago. Esta lectura no confirma el abono bancario.';
+    } else if (result.pago_revision === 'exacto') {
+      reply =
+        duplicate +
+        '¡Gracias! El importe leído coincide con el total del pedido.' +
+        summary +
+        '\n\nUn cajero o administrador verificará ahora los abonos en el banco. ' +
+        'Tus productos siguen reservados. Te avisaremos cuando el pago esté confirmado; no vuelvas a pagar.';
+    } else if (result.pago_revision === 'excedente') {
+      reply =
+        duplicate +
+        'El importe leído supera el total del pedido.' +
+        summary +
+        '\nPosible excedente: ' +
+        bs(result.excedente) +
+        '\n\nAvisé al equipo para verificar los abonos y coordinar el cambio que corresponda. ' +
+        'No pagues más. La IA queda pausada para que te atiendan por este WhatsApp; tu reserva se conserva.';
+    } else {
+      reply =
+        'Recibimos tu comprobante, pero no podemos establecer con seguridad el importe, el destino o la referencia. ' +
+        'El equipo revisará la imagen y el abono antes de pedirte otro pago. No pagues de nuevo. ' +
+        'Tu reserva se conserva y la IA queda pausada para atención humana.';
+    }
   } catch (e) {
     if (order?.id)
       await ordersRpc(p.sender, 'comprobante_error', {
         id: order.id,
         ruta: receiptPath,
+      }).catch(() => null);
+    if (receiptPath)
+      await publicRpc(p.sender, 'humano', {
+        mensaje:
+          'No fue posible leer el comprobante del pedido ' +
+          order?.id +
+          '. Revisar imagen y banco antes de pedir otro pago.',
       }).catch(() => null);
     reply =
       'Recibimos tu imagen y la lectura necesita revisión. Si llegó dentro del plazo, conservamos la reserva para que un cajero o administrador revise el abono. No pagues de nuevo. Puedes solicitar atención humana.';
@@ -494,8 +587,10 @@ async function customerReceipt(p: any) {
     respuesta: reply,
     contexto: state.contexto || {},
     silencio: false,
+    pedido: result,
+    enviar_qr: sendQr,
   });
-  return { reply };
+  return { reply, pedido: result, enviar_qr: sendQr };
 }
 async function orderSession(req: Request) {
   if (req.headers.get('origin') !== env('APP_ORIGIN')) throw Error('Acceso denegado');
@@ -690,10 +785,11 @@ async function dispatch({ includePdf = true } = {}) {
     pedidos: [],
   }));
   for (const order of pickupQueue.pedidos
-    .filter((o: any) =>
-      ['pendiente_aprobacion', 'pago_por_verificar', 'pagado', 'listo'].includes(
-        o.estado,
-      ),
+    .filter(
+      (o: any) =>
+        ['pendiente_aprobacion', 'pago_por_verificar', 'pagado', 'listo'].includes(
+          o.estado,
+        ) && !(o.estado === 'pago_por_verificar' && o.pago_revision === 'parcial'),
     )
     .slice(0, 5)) {
     const at = new Date(order.fecha_recogida).toLocaleString('es-BO', {
@@ -704,7 +800,13 @@ async function dispatch({ includePdf = true } = {}) {
         (order.estado === 'pendiente_aprobacion'
           ? 'Solicitud por aprobar'
           : order.estado === 'pago_por_verificar'
-            ? 'Comprobante por verificar'
+            ? order.pago_revision === 'excedente'
+              ? 'Posible excedente: Bs ' +
+                Number(order.total_comprobantes - order.total).toFixed(2) +
+                ' · revisar cambio y Atención de WhatsApp'
+              : order.pago_revision === 'revision'
+                ? 'Comprobante dudoso: requiere atención humana'
+                : 'Importe completo leído: verificar abono en banco'
             : 'Pedido para preparar') +
           '\n\n' +
           order.nombre +
@@ -716,7 +818,14 @@ async function dispatch({ includePdf = true } = {}) {
             .join('\n') +
           '\n\nRevisa Pedidos para recoger. Referencia: ' +
           order.id,
-        'pedido-aviso:' + order.id + ':' + order.estado,
+        'pedido-aviso:' +
+          order.id +
+          ':' +
+          order.estado +
+          ':' +
+          order.pago_revision +
+          ':' +
+          order.total_comprobantes,
       ),
     );
   }
