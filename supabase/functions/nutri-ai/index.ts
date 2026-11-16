@@ -177,7 +177,7 @@ async function dispatch({includePdf=true}={}){
  const pickupQueue=await ordersRpc('','lista',{},adminId).catch(()=>({pedidos:[]}));
  for(const order of pickupQueue.pedidos.filter((o:any)=>['pendiente_aprobacion','pago_por_verificar','pagado','listo'].includes(o.estado)).slice(0,5)){const at=new Date(order.fecha_recogida).toLocaleString('es-BO',{timeZone:'America/La_Paz'});results.push(await notify((order.estado==='pendiente_aprobacion'?'Solicitud por aprobar':order.estado==='pago_por_verificar'?'Comprobante por verificar':'Pedido para preparar')+'\n\n'+order.nombre+' recogerá el '+at+'.\n'+order.items.map((i:any)=>'• '+i.nombre+': '+i.cantidad+' paquetes').join('\n')+'\n\nRevisa Pedidos para recoger. Referencia: '+order.id,'pedido-aviso:'+order.id+':'+order.estado));}
  const customerQueue=await publicRpc('','lista').catch(()=>({solicitudes:[]}));
- for(const request of customerQueue.solicitudes.slice(0,3))results.push(await notify('Nueva solicitud de WhatsApp\n\nTipo: '+(request.tipo==='humano'?'Atención humana':'Consulta de compra')+'\nReferencia: '+request.id+'\n\nRevísala en Asistente IA → Atención de WhatsApp.','atencion:'+request.id));
+ for(const request of customerQueue.solicitudes.slice(0,3))results.push(await notify('Nueva solicitud de WhatsApp\n\nTipo: '+(request.tipo==='humano'?'Atención humana':'Consulta de compra')+'\nReferencia: '+request.id+'\n\nRevísala en Atención de WhatsApp del menú.','atencion:'+request.id));
  for(const reminder of agenda.recordatorios)results.push(await notify('Recordatorio: '+reminder.texto,'recordatorio:'+reminder.id));
  if(local.getUTCHours()>20||(local.getUTCHours()===20&&local.getUTCMinutes()>=15))results.push(await notify('Cierre diario NutriGalletas · corte 20:15\n\n'+briefFinance(await rpc(adminId,'web','consulta',{desde:today,hasta:today+'T20:15:00-04:00'})),'cierre:'+today));
  if(includePdf&&local.getUTCDay()===0&&local.getUTCHours()>=20){
@@ -204,12 +204,16 @@ Deno.serve(async req=>{
   if(path==='orders'){output=await orderWeb(req,JSON.parse(raw));}
   else if(path==='webchat'){
    const user=await webUser(req),body=JSON.parse(raw);
-   if(body.action==='reanudar_cliente'||body.action==='revisar_solicitud'){
+   if(['estado_atencion','pausar_cliente','reanudar_cliente'].includes(body.action)){
+    if(body.action!=='estado_atencion'&&phone(body.telefono)===adminPhone)throw Error('Acceso denegado');
+    if(body.action!=='estado_atencion')await publicRpc(phone(body.telefono),body.action==='pausar_cliente'?'humano':'reanudar',{mensaje:'Atención iniciada manualmente por el administrador desde la web.'});
+    const inbox=await admin.rpc('ia_bandeja_whatsapp');if(inbox.error)throw Error('No se pudo cargar Atención de WhatsApp.');output=inbox.data;
+   }else if(body.action==='revisar_solicitud'){
     await publicRpc(phone(body.telefono),body.action==='reanudar_cliente'?'reanudar':'revisar',{id:body.id});
     output={reply:body.action==='reanudar_cliente'?'Asistente reanudado para ese cliente.':'Solicitud marcada como revisada; no registra una venta ni aprueba un pago.',...await publicRpc('','lista')};
    }else{
     output=await receiptAfterConfirmation(await brain({user,channel:'web',message:body.message||'',eventId:body.eventId||crypto.randomUUID(),action:body.action,id:body.id,verified:body.verified===true}));
-    if(body.action==='estado')Object.assign(output,await publicRpc('','lista'));
+
    }
   }else{makeAccess(req);if(path==='preflight')output=await preflight(raw,req);else if(path==='message')output=await incoming(JSON.parse(raw));else if(path==='dispatch')output=await dispatch();else return Response.json({error:'Ruta inexistente'},{status:404});}
   return Response.json(output,{headers:['webchat','orders'].includes(path||'')?cors:{'Cache-Control':'no-store'}});
