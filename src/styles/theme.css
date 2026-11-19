@@ -6522,3 +6522,49 @@ dialog::backdrop {
   object-fit: contain;
   object-position: center;
 }
+
+/* Compras: recomendación editable sobre el costo y precio vigente del producto. */
+.purchase-pricing {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.purchase-pricing legend {
+  padding: 0 8px;
+  font-weight: 700;
+}
+.purchase-pricing label {
+  display: grid;
+  gap: 8px;
+}
+.purchase-pricing label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.purchase-pricing input[type='checkbox'] {
+  appearance: auto;
+  accent-color: #ff8828;
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  flex: 0 0 22px;
+  padding: 0;
+}
+.purchase-pricing [data-purchase-suggestion],
+.purchase-pricing [data-purchase-profit] {
+  color: #ffb16b;
+  line-height: 1.6;
+}
+.financial-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .financial-strip {
+    grid-template-columns: 1fr;
+  }
+}

@@ -129,7 +129,7 @@ export function assistantView(store, user) {
       </section>
       <section class="panel">
         <h2>También puedo ayudarte a registrar</h2>
-        <p>Ventas con vuelto, compras recibidas, gastos y recordatorios.</p>
+        <p>Ventas con vuelto, compras recibidas y recordatorios.</p>
         <p>Te pediré los datos que falten y mostraré un resumen antes de guardar.</p>
         <p>
           Las solicitudes de ayuda de clientes se atienden desde «Atención de WhatsApp»

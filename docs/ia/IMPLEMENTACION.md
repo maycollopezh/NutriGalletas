@@ -30,11 +30,11 @@ Configuración guardada y activada el 9 de noviembre de 2026:
 
 Consultas de finanzas, comparación de períodos, productos más vendidos, productos sin venta por 30 días, márgenes sobre ingresos, inventario, demanda diaria, mínimo de reposición, cobertura y EOQ teórico. Los totales se agregan en PostgreSQL sobre el período completo. La IA interpreta la intención: no escribe SQL ni inventa importes.
 
-`resultado_neto_estimado = ingresos - costo histórico vendido - gastos registrados`. No es una declaración fiscal. Las compras no se descuentan otra vez como gasto. Margen sobre ingresos y recargo sobre costo son distintos. El margen objetivo no se fija en 33% sin decisión del negocio.
+`ganancia_bruta = ingresos - costo histórico vendido`. No es utilidad neta ni una declaración fiscal. Las compras no se descuentan otra vez. Se retiró el módulo de gastos; sus registros anteriores se conservan como archivo. El negocio eligió una sugerencia editable de 33% sobre costo: no equivale a margen del 33% sobre ventas.
 
 EOQ es una referencia teórica; revisar capacidad y vencimiento antes de comprar. Cobertura es una estimación basada en demanda anterior; no una promesa de fecha de desabastecimiento. Si no hay demanda no se inventa una predicción.
 
-Se preparan ventas, compras, gastos y recordatorios. Si una venta confirmada incluye correo del cliente, su recibo usa el mismo formateador del sistema, un PDF y Gmail; la confirmación muestra previamente el destinatario. Se solicitan datos faltantes y nombres ambiguos. Contexto: últimos 6 mensajes, útil por 30 minutos. El botón de atención humana pausa ambos canales; reanudar requiere acción en la web. Atender personalmente en YCloud Inbox mientras esté pausado.
+Se preparan ventas, compras y recordatorios. Las compras pueden actualizar el precio de venta si el administrador lo solicita expresamente; el resumen previo muestra el precio anterior, nuevo y ganancia sobre el costo. Si una venta confirmada incluye correo del cliente, su recibo usa el mismo formateador del sistema, un PDF y Gmail; la confirmación muestra previamente el destinatario. Se solicitan datos faltantes y nombres ambiguos. Contexto: últimos 6 mensajes, útil por 30 minutos. El botón de atención humana pausa ambos canales; reanudar requiere acción en la web. Atender personalmente en YCloud Inbox mientras esté pausado.
 
 ## Secretos de Supabase (nunca dentro de src, Git o el chat)
 
@@ -76,7 +76,7 @@ Responses usa herramientas de esquema estricto y `store:false`; se envían el me
 
 `ia_conversaciones`, `ia_operaciones`, `ia_recordatorios`, `ia_eventos`, `ia_envios`, `ia_consumo`. No son nuevas tablas madre del negocio: guardan contexto, confirmaciones, deduplicación y auditoría. Clientes anon/authenticated no pueden leerlas ni ejecutar `ia_servicio`.
 
-`gastos.registrado_en` permite respetar el corte temporal para gastos nuevos. Los registros antiguos conservan NULL porque su hora original no se conoce; se incluyen por su fecha y no se inventa una hora.
+El módulo de gastos está retirado. Sus registros y marcas temporales anteriores se conservan como archivo; los informes actuales muestran ganancia bruta.
 
 ## Correo y entrega
 
@@ -107,7 +107,7 @@ Se compararon el texto facilitado por el propietario, `_language.mjs`, `_brain.m
 - Prompt compartido explícito para conversación libre, saludos, explicaciones, reglas de inventario, seguimiento por producto y período, normalización y distinción entre pregunta y orden.
 - Esquema de interpretación ampliado con respuesta, aclaración, productos y varios temas. Para consultas, PostgreSQL conserva los agregados; una segunda llamada a OpenAI redacta sobre datos autorizados y cálculos del servidor. Si la redacción falla, se devuelve el reporte calculado. Cada llamada cuenta en el límite mensual de 300, por lo que una consulta redactada puede consumir dos solicitudes.
 - Las aclaraciones conservan una solicitud estructurada en el historial privado ya existente. Se renueva al continuar y se descarta al cambiar de tema; no requiere tablas ni permisos nuevos. Contexto temporal de seis mensajes y treinta minutos.
-- Consultas enfocadas por producto y varios temas; gastos generales no se asignan arbitrariamente a un producto ni se atribuye el neto de todo el negocio a una galleta.
+- Consultas enfocadas por producto y varios temas; se muestra ganancia bruta histórica y no se atribuye una utilidad neta a cada galleta.
 - WhatsApp acepta CONFIRMAR/CONFIRMO o CANCELAR/DESCARTAR para la única propuesta vigente del canal; conserva comandos con referencia. QR requiere CONFIRMAR QR VERIFICADO y validación SQL. Los eventos se reservan antes de resolver la propuesta, para que repetir un mensaje anterior no confirme una propuesta nueva.
 - Archivos no compatibles reciben una petición de texto/audio; no se afirma haber visto fotos, documentos o stickers. Audio conserva el flujo Make y máximo 2 MB.
 - Cada respuesta aceptada a un mensaje real revisa avisos vencidos mediante el despachador, sin emitir otra llamada de OpenAI para redactarlos. La agenda conserva sus claves únicas de envío. El PDF permanece en la agenda, no se genera dentro de una respuesta para evitar retrasarla.

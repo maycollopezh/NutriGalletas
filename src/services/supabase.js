@@ -61,7 +61,6 @@ export class CloudStore {
       'lotes_inventario',
       'ventas',
       'detalle_ventas',
-      'gastos',
       'movimientos_inventario',
       'parametros_inventario',
     ];
@@ -184,6 +183,7 @@ export class CloudStore {
     this.timer = undefined;
   }
   async save(table, values, existingId, imageChange) {
+    if (table === 'gastos') throw new Error('El registro de gastos está deshabilitado.');
     if (table === 'perfiles_usuarios')
       return this.action(existingId ? 'update_user' : 'create_user', {
         ...values,
@@ -217,7 +217,6 @@ export class CloudStore {
       ? this.client.from(table).update(values).eq('id', existingId)
       : this.client.from(table).insert({
           ...values,
-          ...(table === 'gastos' ? { usuario_id: this.user.id } : {}),
         });
     const { data, error } = await q.select().single();
     if (error) {

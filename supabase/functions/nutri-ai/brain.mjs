@@ -122,7 +122,7 @@ export function createBrain({ rpc, interpret, compose = null, now = () => new Da
         output = {
           reply:
             'Puedo ayudarte a revisar ventas, ganancias, existencias y qué conviene reponer. ' +
-            'También preparo ventas, compras recibidas, gastos y recordatorios para que tú ' +
+            'También preparo ventas, compras recibidas y recordatorios para que tú ' +
             'los confirmes.\n\n¿Qué necesitas hacer hoy?',
         };
       } else {
@@ -137,7 +137,7 @@ export function createBrain({ rpc, interpret, compose = null, now = () => new Da
         });
         if (
           intent.aclaracion &&
-          ['venta', 'compra', 'gasto', 'recordatorio'].includes(intent.accion)
+          ['venta', 'compra', 'recordatorio'].includes(intent.accion)
         )
           clarificationState = intent;
         if (intent.accion === 'humano') {
@@ -184,9 +184,9 @@ export function createBrain({ rpc, interpret, compose = null, now = () => new Da
           output = {
             reply:
               'Puedes consultar ventas, costos, ganancias, márgenes, stock y vencimientos. ' +
-              'También preparar ventas, compras recibidas, gastos y recordatorios. Siempre ' +
+              'También preparar ventas, compras recibidas y recordatorios. Siempre ' +
               'mostraré un resumen antes de guardar. Por ejemplo: «¿Cuánto vendimos ayer?» o ' +
-              '«Registra un gasto de transporte de Bs 25». Solo el administrador tiene acceso.',
+              '«Recuerda revisar el inventario mañana a las 10:00». Solo el administrador tiene acceso.',
           };
         else if (intent.accion === 'consulta') {
           const range = period(intent, now()),
@@ -231,7 +231,7 @@ export function createBrain({ rpc, interpret, compose = null, now = () => new Da
                       `${p.nombre}: ingresos Bs ${Number(p.ingreso).toFixed(2)} · costo histórico Bs ${Number(p.costo_historico).toFixed(2)} · ganancia bruta Bs ${(Number(p.ingreso) - Number(p.costo_historico)).toFixed(2)}`,
                   )
                   .join('\n') +
-                '\nLos gastos generales no están distribuidos por producto; no se determina un neto individual.'
+                '\nEs ganancia bruta por producto; no utilidad neta.'
               : formatReport(r, t, day(now()));
           let answer =
             topics.length === 1 && topics[0] === 'finanzas' && !selected.length
@@ -263,11 +263,10 @@ export function createBrain({ rpc, interpret, compose = null, now = () => new Da
               answer +=
                 '\nDiferencia de ingresos: Bs ' +
                 (Number(report.ingreso) - Number(previous.ingreso)).toFixed(2) +
-                ' · Diferencia de resultado neto estimado: Bs ' +
-                (
-                  Number(report.resultado_neto_estimado) -
-                  Number(previous.resultado_neto_estimado)
-                ).toFixed(2);
+                ' · Diferencia de ganancia bruta: Bs ' +
+                (Number(report.ganancia_bruta) - Number(previous.ganancia_bruta)).toFixed(
+                  2,
+                );
           }
           const fallback = topics
             .map((t) =>
@@ -352,7 +351,7 @@ export const ASSISTANT_PROMPT =
   'requiere consulta. Para consulta sin período usa hoy. Las fechas se interpretan ' +
   'en Bolivia: ayer, semana, mes. Nunca fechas futuras en reportes. No conviertas ' +
   'fechas de recepción en vencimiento: pregunta cuando falte.\nVentas, compras ' +
-  'recibidas, gastos y recordatorios: extrae todos los datos expresos, normaliza ' +
+  'recibidas y recordatorios: extrae todos los datos expresos, normaliza ' +
   'números escritos y productos, conserva datos previos solo si continúan la misma ' +
   'solicitud. Pide un solo dato faltante por turno en aclaracion; mantén el resto ' +
   'de campos para la siguiente respuesta. El servidor conserva solicitud_pendiente ' +
@@ -369,12 +368,12 @@ export const ASSISTANT_PROMPT =
   'stock y precios se revisan al confirmar. Pago QR es fijo y el cliente introduce ' +
   'el importe; requiere comprobación humana del abono. Efectivo pide importe ' +
   'recibido y calcula vuelto en servidor. Ganancia bruta = ingresos menos costo ' +
-  'histórico vendido; neto estimado resta gastos registrados, no vuelve a restar ' +
-  'compras. Capital no equivale a ganancias: aclara qué cifra desea. Margen sobre ' +
+  'histórico vendido. No calcules utilidad neta ni registres gastos: ese módulo fue retirado. No vuelvas a restar compras. Capital no equivale a ganancias: aclara qué cifra desea. Margen sobre ' +
   'ventas no es recargo sobre costo. Demanda diaria incluye días sin venta; mínimo ' +
   'es punto de pedido (demanda por plazo más reserva), EOQ teórico sujeto a ' +
   'capacidad y vida útil. No aconsejes comprar basándote solo en EOQ. Sin historial ' +
   'no inventes estimaciones. Recordatorio exige día y hora futura ISO -04:00. ' +
+  'Al recibir compras, sugiere por defecto 33% sobre costo (no margen sobre ventas). Solo usa actualizar_precio_venta=true si el usuario pide modificarlo explícitamente; extrae nuevo_precio_venta o porcentaje_ganancia. El resumen debe indicar precio anterior y nuevo antes de CONFIRMAR. ' +
   'Puedes explicar avisos: escribir al WhatsApp abre 24 horas para respuestas y ' +
   'avisos, no elimina la exigencia de plantilla fuera de esa ventana. No prometas ' +
   'entrega: aceptado no significa recibido.\nUsa respuesta para conversación ' +

@@ -14,7 +14,6 @@ export const PERMISSIONS = {
     'inventario',
     'planificacion',
     'ventas',
-    'gastos',
     'asistente',
     'pedidos',
     'atencion',
@@ -205,6 +204,23 @@ export function registerPurchase(data, user, input, day = today()) {
     ),
     'Ese lote ya existe para el producto.',
   );
+  const product = data.productos.find((p) => p.id === input.producto_id);
+  if (input.actualizar_precio_venta) {
+    assert(
+      Number.isFinite(input.nuevo_precio_venta) && round(input.nuevo_precio_venta) > 0,
+      'Indica un precio de venta válido.',
+    );
+    assert(
+      Number(input.precio_venta_anterior) === Number(product.precio_venta),
+      'El precio cambió. Actualiza los datos antes de guardar.',
+    );
+    assert(
+      Number.isFinite(input.porcentaje_ganancia) &&
+        input.porcentaje_ganancia >= 0 &&
+        input.porcentaje_ganancia <= 500,
+      'El porcentaje debe estar entre 0 y 500.',
+    );
+  }
   const purchase = {
     id: id(),
     proveedor_id: input.proveedor_id,
@@ -242,6 +258,10 @@ export function registerPurchase(data, user, input, day = today()) {
     fecha: purchase.fecha,
     referencia_id: purchase.id,
   });
+  if (input.actualizar_precio_venta) {
+    product.precio_venta = round(input.nuevo_precio_venta);
+    product.porcentaje_ganancia_sugerido = input.porcentaje_ganancia;
+  }
   return purchase;
 }
 export function financialSummary(data, from, to) {
@@ -255,16 +275,12 @@ export function financialSummary(data, from, to) {
   const sales = data.ventas.filter(
     (v) => localDate(v.fecha) >= from && localDate(v.fecha) <= to,
   );
-  const expenses = data.gastos.filter((g) => g.fecha >= from && g.fecha <= to);
   const revenue = round(sales.reduce((n, v) => n + v.total, 0));
   const cost = round(sales.reduce((n, v) => n + v.costo_total, 0));
-  const expense = round(expenses.reduce((n, g) => n + g.monto, 0));
   return {
     revenue,
     cost,
-    expense,
     gross: round(revenue - cost),
-    net: round(revenue - cost - expense),
     count: sales.length,
   };
 }

@@ -14,7 +14,7 @@ export function customerText(
   return !value || isInternalText(value) ? fallback : value;
 }
 export function briefFinance(r) {
-  return `Resumen del ${day(new Date(r.desde))} al ${day(new Date(r.hasta))}\n\n• Ingresos: ${money(r.ingreso)}\n• Costo de lo vendido: ${money(r.costo_historico)}\n• Ganancia bruta: ${money(r.ganancia_bruta)}\n• Gastos: ${money(r.gastos)}\n• Resultado neto estimado: ${money(r.resultado_neto_estimado)}\n\n${r.ventas} ventas. Cifras internas según lo registrado.`;
+  return `Resumen del ${day(new Date(r.desde))} al ${day(new Date(r.hasta))}\n\n• Ingresos: ${money(r.ingreso)}\n• Costo de lo vendido: ${money(r.costo_historico)}\n• Ganancia bruta: ${money(r.ganancia_bruta)}\n\n${r.ventas} ventas. Ganancia bruta; no utilidad neta. Cifras internas según lo registrado.`;
 }
 export function inventoryAlert(r, today = day()) {
   const names = new Map((r.rendimiento || []).map((p) => [p.id, p.nombre]));

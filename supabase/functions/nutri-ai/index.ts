@@ -748,7 +748,7 @@ async function weeklyPdf(report: any, cutoff: Date) {
   ])
     write(formatReport(report, kind));
   write(
-    'Datos internos. Incluye el domingo solo hasta las 20:00. Compras recibidas y gastos operativos se registran por separado.',
+    'Datos internos. Incluye el domingo solo hasta las 20:00. Ganancia bruta: ventas menos costo histórico de los productos vendidos. No representa utilidad neta.',
   );
   return Buffer.from(await pdf.save());
 }

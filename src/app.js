@@ -1,3 +1,8 @@
+import {
+  purchasePricingFields,
+  syncPurchasePricing,
+  purchasePricingPayload,
+} from './features/purchase-pricing.js';
 import { whatsappInboxView } from './features/whatsapp-inbox.js';
 import { ordersView } from './features/orders.js';
 import { assistantView } from './features/assistant.js';
@@ -68,7 +73,6 @@ const titles = {
   compras: 'Compras',
   inventario: 'Inventario',
   ventas: 'Ventas',
-  gastos: 'Gastos',
 };
 const descriptions = {
   dashboard: 'Así va tu tienda. Revisa lo vendido y lo que necesita atención.',
@@ -79,7 +83,6 @@ const descriptions = {
   compras: 'Una compra recibida suma productos al inventario.',
   inventario: 'Lo que tienes y lo que necesita atención.',
   ventas: 'Consulta lo vendido y abre sus comprobantes.',
-  gastos: 'Registra las salidas de dinero de tu negocio.',
 };
 function shiftDay(n) {
   const d = new Date(today() + 'T12:00:00Z');
@@ -278,7 +281,6 @@ function pageHead(button = '') {
           inventario: 'Lo que tienes y lo que necesita atención',
           ventas: 'Cada venta, en su lugar',
           compras: 'Registra lo que llega a tu tienda',
-          gastos: 'Ten claros tus gastos',
           proveedores: 'Quién abastece tu tienda',
           categorias: 'Organiza tus variedades',
         }[page] || titles[page]}
@@ -422,7 +424,6 @@ function render() {
         'compras',
         'inventario',
         'planificacion',
-        'gastos',
         'asistente',
         'atencion',
       ],
@@ -927,8 +928,7 @@ const views = {
         ${[
           ['Ventas', m.revenue, `${m.count} ventas registradas`],
           ['Costo vendido', m.cost, 'Lo que costaron los productos vendidos'],
-          ['Gastos', m.expense, 'Salidas de dinero del período'],
-          ['Resultado neto', m.net, 'Ventas menos costos y gastos'],
+          ['Ganancia bruta', m.gross, 'Ventas menos costo de los productos vendidos'],
         ]
           .map(
             ([l, v, h], i) =>
@@ -1443,42 +1443,6 @@ const views = {
         ${salesTable(sales, true)}
       </section>`;
   },
-  gastos() {
-    const rows = data.gastos
-      .filter((g) => g.fecha >= from && g.fecha <= to)
-      .sort((a, b) => b.fecha.localeCompare(a.fecha));
-    return /* HTML */ `${pageHead(
-        '<button class="primary" data-action="new" data-table="gastos">' +
-          icon('mas') +
-          ' Agregar gasto</button>',
-      )}
-      <div class="expense-overview">
-        <span class="large-icon">${icon('gastos')}</span>
-        <div>
-          <span>Gastos del período</span
-          ><strong>${money(rows.reduce((n, g) => n + g.monto, 0))}</strong>
-        </div>
-        ${dateFilters()}
-      </div>
-      ${panelTable(
-        ['Fecha', '¿En qué se gastó?', 'Categoría', 'Monto', 'Acción'],
-        rows.map(
-          (g) =>
-            /* HTML */ `<tr>
-              <td>${formatDate(g.fecha)}</td>
-              <td>
-                <strong>${esc(g.concepto)}</strong><small>${esc(g.observacion)}</small>
-              </td>
-              <td>${badge(g.categoria, 'neutral')}</td>
-              <td><strong>${money(g.monto)}</strong></td>
-              <td>${editButton('gastos', g.id)}</td>
-            </tr>`,
-        ),
-      )}
-      <p class="inline-help">
-        ${icon('info')} Las compras de productos se registran en Compras.
-      </p>`;
-  },
   usuarios() {
     return /* HTML */ `${pageHead(
         /* HTML */ `<div class="toolbar"><button data-action="permissions">Ver permisos</button><button class="primary" data-action="new" data-table="perfiles_usuarios">` +
@@ -1586,16 +1550,6 @@ const schemas = {
       ['activo', 'Estado', 'status'],
     ],
   },
-  gastos: {
-    title: 'gasto',
-    fields: [
-      ['concepto', '¿En qué se gastó?'],
-      ['categoria', 'Categoría'],
-      ['monto', 'Monto (Bs)', 'money'],
-      ['fecha', 'Fecha', 'date'],
-      ['observacion', 'Observación', 'textarea'],
-    ],
-  },
   perfiles_usuarios: {
     title: 'usuario',
     fields: [
@@ -1701,9 +1655,7 @@ function editForm(table, existingId) {
     <p class="form-error" role="alert"></p>
     <div class="form-actions">
       <button type="button" data-action="close">Cancelar</button
-      ><button class="primary">
-        ${table === 'gastos' ? 'Guardar gasto' : 'Guardar cambios'}
-      </button>
+      ><button class="primary">Guardar cambios</button>
     </div>
   </form>`;
 }
@@ -1756,7 +1708,7 @@ document.addEventListener('change', async (event) => {
   }
 });
 function openEdit(table, existingId) {
-  if (['proveedores', 'categorias_productos', 'gastos'].includes(table)) {
+  if (['proveedores', 'categorias_productos'].includes(table)) {
     sideRecord = existingId || '';
     render();
     document.querySelector('.side-editor input')?.focus();
@@ -1798,28 +1750,13 @@ function composedView() {
         ${sideEditor('Ajustar recomendación', planningForm(data, selected.product.id))}
       </div>`;
   }
-  if (['proveedores', 'categorias', 'gastos'].includes(page)) {
-    const table = {
-      proveedores: 'proveedores',
-      categorias: 'categorias_productos',
-      gastos: 'gastos',
-    }[page];
-    const recordId =
-      sideRecord === null
-        ? page === 'gastos'
-          ? undefined
-          : data[table][0]?.id
-        : sideRecord || undefined;
+  if (['proveedores', 'categorias'].includes(page)) {
+    const table = page === 'categorias' ? 'categorias_productos' : 'proveedores';
+    const recordId = sideRecord === null ? data[table][0]?.id : sideRecord || undefined;
     body = /* HTML */ `<div class="reference-columns">
       <div class="reference-list">${body}</div>
       ${sideEditor(
-        page === 'gastos'
-          ? recordId
-            ? 'Editar gasto'
-            : 'Nuevo gasto'
-          : page === 'categorias'
-            ? 'Editar categoría'
-            : 'Datos del proveedor',
+        page === 'categorias' ? 'Editar categoría' : 'Datos del proveedor',
         editForm(table, recordId),
       )}
     </div>`;
@@ -1867,6 +1804,7 @@ function purchaseForm() {
         true,
       )}
     </div>
+    ${purchasePricingFields()}
     <p class="field-hint">El lote y el vencimiento están impresos en el empaque.</p>
     <div class="purchase-sum">
       <span>Total de la compra</span><strong id="purchase-total">Bs 0,00</strong>
@@ -2368,6 +2306,8 @@ document.addEventListener('click', async (event) => {
   }
 });
 document.addEventListener('change', (event) => {
+  if (event.target.closest('#purchase-form'))
+    syncPurchasePricing(event.target.form, data, event.target.name);
   const el = event.target;
   if (el.id === 'qr-manual-check') {
     qrAcknowledged = el.checked ? qrSaleFingerprint(cart, data.productos) : '';
@@ -2415,6 +2355,7 @@ document.addEventListener('input', (event) => {
   }
   if (event.target.closest('#purchase-form')) {
     const form = event.target.closest('form');
+    syncPurchasePricing(form, data, event.target.name);
     const total =
       Number(form.elements.cantidad.value) * Number(form.elements.costo_unitario.value);
     form.querySelector('#purchase-total').textContent = money(
@@ -2527,10 +2468,15 @@ document.addEventListener('submit', async (event) => {
     if (form.id === 'purchase-form') {
       values.cantidad = Number(values.cantidad);
       values.costo_unitario = Number(values.costo_unitario);
+      Object.assign(values, purchasePricingPayload(form));
       await store.purchase(values);
       modal.close();
       await refresh();
-      toast('Compra recibida. Lote e inventario actualizados.');
+      toast(
+        values.actualizar_precio_venta
+          ? 'Compra recibida. Inventario y precio de venta actualizados.'
+          : 'Compra recibida. Se conservó el precio de venta.',
+      );
     }
   } catch (error) {
     if (errorEl) errorEl.textContent = error.message;
@@ -2580,3 +2526,8 @@ try {
     </p>
   </div>`;
 }
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-use-suggested-price]');
+  if (button) syncPurchasePricing(button.closest('form'), data, 'suggested');
+});

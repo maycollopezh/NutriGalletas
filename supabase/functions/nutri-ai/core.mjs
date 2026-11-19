@@ -155,24 +155,21 @@ export function prepareDraft(i, catalog, now = new Date()) {
       fecha_vencimiento: i.fecha,
       observacion: i.nota || '',
     };
-    summary = `COMPRA RECIBIDA\n${supplier.nombre}\n${quantity} × ${p.nombre} a ${money(cost)}\nLote: ${i.codigo_lote} · vence ${i.fecha}\nTotal: ${money(quantity * cost)}\nEsto registra mercadería ya recibida, no encarga un pedido al proveedor.`;
-  } else if (type === 'gasto') {
-    if (!i.concepto || i.concepto.trim().length < 2 || i.concepto.length > 160)
-      throw Error('¿En qué se gastó el dinero?');
-    if (!i.categoria || i.categoria.length > 160)
-      throw Error('¿Qué categoría tiene el gasto?');
-    const value = number(i.monto, 'el monto');
-    const date = i.fecha || day(now);
-    if (!validDay(date) || date > day(now))
-      throw Error('Indica la fecha del gasto, sin fechas futuras.');
-    data = {
-      concepto: i.concepto,
-      categoria: i.categoria,
-      monto: value,
-      fecha: date,
-      observacion: i.nota || '',
-    };
-    summary = `GASTO\n${i.concepto} · ${i.categoria}\n${money(value)} · ${date}`;
+    const percentage = i.porcentaje_ganancia ?? p.porcentaje_ganancia_sugerido ?? 33;
+    const suggested = Math.round(cost * (1 + percentage / 100) * 100) / 100;
+    if (!Number.isFinite(percentage) || percentage < 0 || percentage > 500)
+      throw Error('El porcentaje sobre el costo debe estar entre 0 y 500.');
+    const update = i.actualizar_precio_venta === true;
+    const nextPrice = update
+      ? number(i.nuevo_precio_venta ?? suggested, 'el nuevo precio de venta')
+      : Number(p.precio_venta);
+    Object.assign(data, {
+      actualizar_precio_venta: update,
+      nuevo_precio_venta: update ? nextPrice : null,
+      porcentaje_ganancia: percentage,
+      precio_venta_anterior: update ? Number(p.precio_venta) : null,
+    });
+    summary = `COMPRA RECIBIDA\n${supplier.nombre}\n${quantity} × ${p.nombre} a ${money(cost)}\nLote: ${i.codigo_lote} · vence ${i.fecha}\nTotal: ${money(quantity * cost)}\nEsto registra mercadería ya recibida, no encarga un pedido al proveedor.\n${update ? 'Actualizar precio de venta: ' + money(p.precio_venta) + ' → ' + money(nextPrice) : 'Conservar precio de venta: ' + money(p.precio_venta)}\nSugerencia: ${money(suggested)} (${percentage}% sobre costo). Ganancia bruta prevista: ${money(nextPrice - cost)} por paquete.${nextPrice <= cost ? '\nADVERTENCIA: este precio no deja ganancia sobre el lote.' : ''}`;
   } else if (type === 'recordatorio') {
     const at = i.fecha;
     if (
@@ -229,15 +226,10 @@ export function formatReport(r, kind = 'finanzas', today = day()) {
       `${money(r.costo_historico)}` +
       '\nGanancia bruta: ' +
       `${money(r.ganancia_bruta)}` +
-      '\nGastos: ' +
-      `${money(r.gastos)}` +
-      '\nResultado neto estimado: ' +
-      `${money(r.resultado_neto_estimado)}` +
       '\n' +
       `${r.ventas}` +
       ' ventas. El costo histórico corresponde a los lotes vendidos; las compras de ' +
-      'inventario no se descuentan otra vez. El resultado es interno y no incluye ' +
-      'conceptos que no se hayan registrado.'
+      'inventario no se descuentan otra vez. Es ganancia bruta; no equivale a utilidad neta.'
     );
   if (kind === 'ventas')
     return (
@@ -317,7 +309,6 @@ export const intentTool = {
           'consulta',
           'venta',
           'compra',
-          'gasto',
           'recordatorio',
           'ayuda',
           'humano',
@@ -378,6 +369,9 @@ export const intentTool = {
       correo_cliente: nullableString,
       proveedor: nullableString,
       costo_unitario: nullableNumber,
+      actualizar_precio_venta: { type: ['boolean', 'null'] },
+      nuevo_precio_venta: nullableNumber,
+      porcentaje_ganancia: nullableNumber,
       codigo_lote: nullableString,
       fecha: nullableString,
       concepto: nullableString,
@@ -402,6 +396,9 @@ export const intentTool = {
       'correo_cliente',
       'proveedor',
       'costo_unitario',
+      'actualizar_precio_venta',
+      'nuevo_precio_venta',
+      'porcentaje_ganancia',
       'codigo_lote',
       'fecha',
       'concepto',

@@ -46,7 +46,6 @@ export class DemoStore {
       categorias_productos: 'categorias',
       productos: 'productos',
       proveedores: 'proveedores',
-      gastos: 'gastos',
     };
     assert(canAccess(this.user, routes[table]), 'No tienes permisos.');
     assert(this.user.rol !== 'cajero', 'El cajero solo puede consultar productos.');
@@ -77,14 +76,6 @@ export class DemoStore {
         'Selecciona una categoría válida.',
       );
     }
-    if (table === 'gastos')
-      assert(
-        Number.isFinite(record.monto) &&
-          record.monto > 0 &&
-          record.concepto?.trim() &&
-          /^\d{4}-\d{2}-\d{2}$/.test(record.fecha),
-        'Completa el concepto, monto y fecha del gasto.',
-      );
     if (table === 'perfiles_usuarios') {
       assert(this.user.rol === 'administrador', 'Acceso restringido.');
       record.email = record.email.toLowerCase().trim();
@@ -118,7 +109,6 @@ export class DemoStore {
         ),
         'La categoría ya existe.',
       );
-    if (table === 'gastos') record.usuario_id = this.user.id;
     const index = data[table].findIndex((r) => r.id === record.id);
     if (index < 0) data[table].push(record);
     else data[table][index] = { ...data[table][index], ...record };
