@@ -3,11 +3,11 @@ import nodemailer from 'npm:nodemailer@10.3.1';
 import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
 import { Buffer } from 'node:buffer';
 import { receiptContent, type Receipt } from '../receipt-email/handler.ts';
-import { createBrain, openAIIntent, openAIAnswer } from './brain.mjs';
-import { inventoryAlert, briefFinance, customerText } from './presentation.mjs';
-import { readReceiptImage } from './pickup-media.mjs';
-import { createPublicBrain, interpretCustomer } from './public-brain.mjs';
-import { day, formatReport } from './core.mjs';
+import { createBrain, openAIIntent, openAIAnswer } from './ia/asistente-admin.mjs';
+import { inventoryAlert, briefFinance, customerText } from './respuestas/formato.mjs';
+import { readReceiptImage } from './whatsapp/lectura-comprobante.mjs';
+import { createPublicBrain, interpretCustomer } from './ia/asistente-cliente.mjs';
+import { day, formatReport } from './compartido/operaciones.mjs';
 import {
   equal,
   phone,
@@ -15,8 +15,8 @@ import {
   audioUrl,
   proofFor,
   verifyProof,
-} from './security.mjs';
-const env = (name: string) => Deno.env.get(name) || '';
+} from './seguridad/firmas.mjs';
+import { env } from './configuracion/entorno.ts';
 const url = env('SUPABASE_URL'),
   service = env('SUPABASE_SERVICE_ROLE_KEY'),
   anon = env('SUPABASE_ANON_KEY');

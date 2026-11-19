@@ -19,7 +19,7 @@ npm run build
 
 La salida se regenera desde cero para no conservar archivos de rutas antiguas. `tests/`, `docs/`, SQL y funciones privadas no se incluyen. El servidor `scripts/dev-server.mjs` solo se usa con `npm run dev` para abrir la copia local.
 
-Antes de publicar, revisa el diff y los archivos que subirás. El repositorio excluye `.env`, dependencias y archivos generados. Conserva `src/config.js` con valores públicos. Al publicar en otro dominio, también deben actualizarse los orígenes y destinos autorizados de Auth, recuperación y funciones; no amplíes esos permisos con comodines para resolver un error.
+Antes de publicar, revisa el diff y los archivos que subirás. El repositorio excluye `.env`, dependencias y archivos generados. Conserva `src/configuracion/publica.js` con valores públicos. Al publicar en otro dominio, también deben actualizarse los orígenes y destinos autorizados de Auth, recuperación y funciones; no amplíes esos permisos con comodines para resolver un error.
 
 ## Supabase
 

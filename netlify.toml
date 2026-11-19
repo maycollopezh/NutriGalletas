@@ -12,6 +12,6 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
 [[headers]]
-  for = "/src/config.js"
+  for = "/src/configuracion/publica.js"
   [headers.values]
     Cache-Control = "no-store"

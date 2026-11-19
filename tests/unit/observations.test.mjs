@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cashSettlement, saleLots, replenishment } from '../../src/domain/operations.js';
 import { registerSale, today } from '../../src/domain/domain.js';
-import { inventoryDefaults } from '../../src/domain/inventory.js';
+import { inventoryDefaults } from '../../src/investigacion-operativa/plan-inventario.js';
 const admin = { id: 'admin', rol: 'administrador', activo: true };
 function fixture() {
   return {

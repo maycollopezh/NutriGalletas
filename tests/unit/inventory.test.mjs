@@ -6,9 +6,12 @@ import {
   validateInventoryParameters,
   aggregateDailySales,
   shiftInventoryDay,
-} from '../../src/domain/inventory.js';
+} from '../../src/investigacion-operativa/plan-inventario.js';
 import { canAccess } from '../../src/domain/domain.js';
-import { planningView, planningForm } from '../../src/features/inventory-view.js';
+import {
+  planningView,
+  planningForm,
+} from '../../src/features/inventario/planificacion.js';
 import { CloudStore } from '../../src/services/supabase.js';
 const day = '2026-10-20',
   product = { id: 'p', nombre: 'Avena', codigo: 'GAL-001', activo: true };

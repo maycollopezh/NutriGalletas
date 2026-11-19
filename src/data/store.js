@@ -1,5 +1,8 @@
 import { IMAGE_TABLES } from '../services/images.js';
-import { validateInventoryParameters, inventoryDefaults } from '../domain/inventory.js';
+import {
+  validateInventoryParameters,
+  inventoryDefaults,
+} from '../investigacion-operativa/plan-inventario.js';
 import { seedDemo } from './demo.js';
 import {
   assert,

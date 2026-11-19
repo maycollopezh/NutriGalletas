@@ -34,7 +34,7 @@
   <button id="run">Ejecutar pruebas</button>
   <pre id="out">Listo para comprobar sesión, ventas simultáneas, eventos y bloqueo.</pre>
   <script type="module">
-    import { config } from '../../src/config.js';
+    import { config } from '../../src/configuracion/publica.js';
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
     const out = document.querySelector('#out');
     const button = document.querySelector('#run');

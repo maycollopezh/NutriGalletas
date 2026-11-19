@@ -1,5 +1,5 @@
 import { assert, today, round } from './domain.js';
-import { inventoryPlan } from './inventory.js';
+import { inventoryPlan } from '../investigacion-operativa/plan-inventario.js';
 export function cashSettlement(total, received) {
   const text = String(received ?? '').trim();
   if (!/^\d+(?:\.\d{1,2})?$/.test(text))

@@ -1,6 +1,9 @@
-import { isBusinessProduct, money } from '../domain/domain.js';
-import { inventoryDefaults, inventoryPlan } from '../domain/inventory.js';
-import { productPhoto } from '../ui/visuals.js';
+import { isBusinessProduct, money } from '../../domain/domain.js';
+import {
+  inventoryDefaults,
+  inventoryPlan,
+} from '../../investigacion-operativa/plan-inventario.js';
+import { productPhoto } from '../../ui/visuals.js';
 const esc = (value) =>
   String(value ?? '').replace(
     /[&<>"']/g,

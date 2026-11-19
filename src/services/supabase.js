@@ -1,10 +1,12 @@
 import { IMAGE_BUCKET, IMAGE_TABLES } from './images.js';
-import { validateInventoryParameters } from '../domain/inventory.js';
-import { config } from '../config.js';
+import { validateInventoryParameters } from '../investigacion-operativa/plan-inventario.js';
+import { config } from '../configuracion/publica.js';
 export class CloudStore {
   static async create() {
     if (!config.supabaseUrl || !config.supabasePublishableKey)
-      throw new Error('Completa la configuración pública de Supabase en src/config.js.');
+      throw new Error(
+        'Completa la configuración pública de Supabase en src/configuracion/publica.js.',
+      );
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.4');
     const store = new CloudStore();
     store.client = createClient(config.supabaseUrl, config.supabasePublishableKey);

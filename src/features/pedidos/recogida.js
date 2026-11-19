@@ -1,4 +1,4 @@
-import { money } from '../domain/domain.js';
+import { money } from '../../domain/domain.js';
 const esc = (v) =>
   String(v ?? '').replace(
     /[&<>"']/g,

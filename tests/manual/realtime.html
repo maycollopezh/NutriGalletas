@@ -23,7 +23,7 @@
   <button id="run">Comprobar recepción de cambios</button>
   <div id="out"></div>
   <script type="module">
-    import { config } from '../../src/config.js';
+    import { config } from '../../src/configuracion/publica.js';
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
     const a = createClient(config.supabaseUrl, config.supabasePublishableKey);
     const b = createClient(config.supabaseUrl, config.supabasePublishableKey, {

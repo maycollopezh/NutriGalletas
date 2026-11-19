@@ -1,4 +1,4 @@
-import { money } from '../domain/domain.js';
+import { money } from '../../domain/domain.js';
 
 export function purchasePricingFields() {
   return /* HTML */ `<fieldset class="field full purchase-pricing">

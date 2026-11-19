@@ -4,7 +4,7 @@ Estado actualizado al 20 de octubre de 2026: proyecto NutriGalletas creado (jdfe
 
 Cuatro cuentas activas: administrador Maycol; Nancy y Jhissel en caja; Isaura en almacen. Inicio de sesion del administrador y operaciones reales de compra/venta comprobados. 29 pruebas de permisos SQL correctas; proteccion de usuario inactivo comprobada en SQL. Concurrencia real, rechazo de lotes duplicados y bloqueo tras cinco fallos verificados. Realtime comprobado entre dos conexiones autenticadas del administrador y ajuste de autenticacion aplicado al sistema. Validacion local de dominio y ciclo de sesion: 10 pruebas correctas.
 
-Inicio de sesion y pantallas de los cuatro usuarios comprobados; exportacion de comprobante a PDF verificada. auth-email desplegada y Send Email Hook activo; recuperacion del administrador solicitada y correo Delivered en Resend. Pendientes: cambio de contrasena por el titular, nuevo login, uso unico/vencimiento del enlace y entrega a empleados con remitente verificado. Ver docs/VALIDACIONES.md para evidencia y limites. src/config.js usa Supabase real. No repetir 001_schema.sql ni la carga inicial: ya estan aplicados.
+Inicio de sesion y pantallas de los cuatro usuarios comprobados; exportacion de comprobante a PDF verificada. auth-email desplegada y Send Email Hook activo; recuperacion del administrador solicitada y correo Delivered en Resend. Pendientes: cambio de contrasena por el titular, nuevo login, uso unico/vencimiento del enlace y entrega a empleados con remitente verificado. Ver docs/VALIDACIONES.md para evidencia y limites. src/configuracion/publica.js usa Supabase real. No repetir 001_schema.sql ni la carga inicial: ya estan aplicados.
 
 Los pasos siguientes sirven como guía reproducible; los marcados arriba ya se realizaron.
 
@@ -83,7 +83,7 @@ En Authentication → Hooks activa Send Email, apunta a `https://TU_PROYECTO.sup
 
 ## 7. Configuración pública de la página
 
-Edita `src/config.js`:
+Edita `src/configuracion/publica.js`:
 
 ```js
 mode: 'supabase',

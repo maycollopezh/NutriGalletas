@@ -177,7 +177,9 @@ for (const key of [
   'nivel_servicio',
 ])
   parameter[key] = Number(parameter[key]);
-const { inventoryPlan } = await import('../../src/domain/inventory.js');
+const { inventoryPlan } = await import(
+  '../../src/investigacion-operativa/plan-inventario.js'
+);
 const expected = inventoryPlan(
   modelData,
   modelData.productos.find((p) => p.id === product),

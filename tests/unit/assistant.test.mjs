@@ -7,15 +7,18 @@ import {
   formatReport,
   intentTool,
   orderAdvice,
-} from '../../supabase/functions/nutri-ai/core.mjs';
+} from '../../supabase/functions/nutri-ai/compartido/operaciones.mjs';
 import {
   verifyEvent,
   verifyProof,
   proofFor,
   mac,
   audioUrl,
-} from '../../supabase/functions/nutri-ai/security.mjs';
-import { createBrain, openAIIntent } from '../../supabase/functions/nutri-ai/brain.mjs';
+} from '../../supabase/functions/nutri-ai/seguridad/firmas.mjs';
+import {
+  createBrain,
+  openAIIntent,
+} from '../../supabase/functions/nutri-ai/ia/asistente-admin.mjs';
 const catalog = {
   productos: [
     { id: 'p', nombre: 'Avena y miel', codigo: 'GAL-001', precio_venta: 6 },

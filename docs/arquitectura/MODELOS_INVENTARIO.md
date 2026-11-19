@@ -1,5 +1,7 @@
 # Investigación Operativa II: modelos implementados
 
+> Este documento describe el incremento original de inventario. Para las rutas actuales, la separación de modelos y su integración posterior con IA/WhatsApp, consultar [Guía técnica de exposición](GUIA_TECNICA_EXPOSICION.md). Las cantidades de tablas y el alcance de este incremento no representan por sí solos el esquema completo actual.
+
 ## Uso
 
 Abrir **Planificación de inventario**. Administrador configura; almacén consulta. El cajero no accede a los parámetros ni a la demanda agregada.

@@ -1,4 +1,4 @@
-import { money } from '../domain/domain.js';
+import { money } from '../../domain/domain.js';
 // This acknowledges a cashier's manual check; it never represents bank verification.
 export function qrSaleFingerprint(cart, products) {
   if (!cart.length) return '';

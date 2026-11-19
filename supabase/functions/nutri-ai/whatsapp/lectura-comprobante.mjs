@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { audioUrl } from './security.mjs';
+import { audioUrl } from '../seguridad/firmas.mjs';
 const receiptTool = {
   type: 'function',
   name: 'leer_comprobante',

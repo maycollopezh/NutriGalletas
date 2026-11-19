@@ -1,4 +1,4 @@
-import { day, money } from './core.mjs';
+import { day, money } from '../compartido/operaciones.mjs';
 export const isInternalText = (text) =>
   /(?:^|\n)\s*(?:saludo breve[.!]?|el usuario (?:pregunta|quiere|solicita|pide)|se (?:requiere|debe) (?:una respuesta|responder)|(?:intent|accion|razonamiento|an[aá]lisis interno)\s*:)/i.test(
     String(text || ''),

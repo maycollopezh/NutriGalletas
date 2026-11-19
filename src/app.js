@@ -2,10 +2,10 @@ import {
   purchasePricingFields,
   syncPurchasePricing,
   purchasePricingPayload,
-} from './features/purchase-pricing.js';
-import { whatsappInboxView } from './features/whatsapp-inbox.js';
-import { ordersView } from './features/orders.js';
-import { assistantView } from './features/assistant.js';
+} from './features/compras/precio-sugerido.js';
+import { whatsappInboxView } from './features/whatsapp/atencion-humana.js';
+import { ordersView } from './features/pedidos/recogida.js';
+import { assistantView } from './features/ia/asistente.js';
 import { prepareImage, IMAGE_TABLES } from './services/images.js';
 import {
   cashSettlement,
@@ -17,10 +17,14 @@ import {
   qrSaleFingerprint,
   canConfirmQrSale,
   fixedQrPanel,
-} from './features/payments.js';
-import { planningView, planningForm, planningRows } from './features/inventory-view.js';
+} from './features/ventas/pagos.js';
+import {
+  planningView,
+  planningForm,
+  planningRows,
+} from './features/inventario/planificacion.js';
 import { productPhoto } from './ui/visuals.js';
-import { config } from './config.js';
+import { config } from './configuracion/publica.js';
 import { DemoStore } from './data/store.js';
 import { CloudStore } from './services/supabase.js';
 import {

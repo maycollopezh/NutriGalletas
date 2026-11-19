@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { qrSaleFingerprint, canConfirmQrSale } from '../../src/features/payments.js';
+import { qrSaleFingerprint, canConfirmQrSale } from '../../src/features/ventas/pagos.js';
 const products = [
   { id: 'avena', precio_venta: 6 },
   { id: 'cacao', precio_venta: 8 },

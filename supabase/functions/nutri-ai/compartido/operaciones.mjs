@@ -1,3 +1,5 @@
+import { orderAdvice } from '../investigacion-operativa/recomendacion.mjs';
+export { orderAdvice } from '../investigacion-operativa/recomendacion.mjs';
 export const zone = 'America/La_Paz';
 export const day = (now = new Date()) =>
   new Intl.DateTimeFormat('en-CA', {
@@ -184,33 +186,6 @@ export function prepareDraft(i, catalog, now = new Date()) {
     summary = `RECORDATORIO\n${i.concepto}\n${new Date(at).toLocaleString('es-BO', { timeZone: zone })}`;
   } else throw Error('Operación no admitida.');
   return { tipo: type, datos: data, resumen: summary };
-}
-export function orderAdvice(daily, stock, p, reorder) {
-  if (
-    !p ||
-    daily <= 0 ||
-    Number(p.costo_pedido) <= 0 ||
-    Number(p.costo_mantenimiento_anual) <= 0
-  )
-    return '';
-  const annual = daily * 365,
-    S = Number(p.costo_pedido),
-    H = Number(p.costo_mantenimiento_anual),
-    exact = Math.sqrt((2 * annual * S) / H);
-  const lower = Math.max(1, Math.floor(exact)),
-    upper = Math.max(1, Math.ceil(exact));
-  const cost = (q) => (annual / q) * S + (q / 2) * H;
-  const eoq = cost(lower) < cost(upper) ? lower : upper;
-  const position = stock + Number(p.unidades_en_camino || 0);
-  const feasible = Math.max(
-    0,
-    Math.min(
-      eoq,
-      Math.floor(Number(p.capacidad_maxima) - position),
-      Math.floor(daily * Number(p.vida_util_dias) - position),
-    ),
-  );
-  return ` · pedido económico teórico ${eoq} · compra sugerida ${position <= reorder ? feasible : 0} paquetes (capacidad y vida útil consideradas)`;
 }
 export function formatReport(r, kind = 'finanzas', today = day()) {
   const names = new Map((r.rendimiento || []).map((x) => [x.id, x.nombre]));
