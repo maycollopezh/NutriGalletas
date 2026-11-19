@@ -619,7 +619,7 @@ function minimumInfo(product) {
   const p = replenishment(data, product);
   return /* HTML */ `<div class="minimum-info">
     <span
-      >Mínimo para reponer
+      >Stock mínimo automático
       <strong
         >${p.minimum == null ? 'Sin estimación' : p.minimum + ' paquetes'}</strong
       ></span
@@ -630,6 +630,7 @@ function minimumInfo(product) {
     >${p.configured && p.minimum == null
       ? '<small>Faltan ventas recientes para calcular la reposición.</small>'
       : ''}
+    <small>Calculado con demanda, plazo del proveedor y reserva de seguridad.</small>
   </div>`;
 }
 function lotAllocationHtml(items) {
@@ -1626,7 +1627,6 @@ function editForm(table, existingId) {
     activo: true,
     fecha: today(),
     precio_venta: '',
-    stock_minimo: 15,
     presentacion: 'Paquete de 100 g',
     rol: 'cajero',
   };
@@ -1656,6 +1656,17 @@ function editForm(table, existingId) {
         )
         .join('')}${password}${IMAGE_TABLES.includes(table) ? imageField(record) : ''}
     </div>
+    ${table === 'productos'
+      ? /* HTML */ `<section class="notice" aria-label="Stock mínimo automático">
+          ${existingId ? minimumInfo(record) : '<strong>Stock mínimo automático</strong>'}
+          <p class="field-hint">
+            El mínimo no se ingresa manualmente. Se calcula como demanda diaria × días de
+            entrega + reserva, redondeado hacia arriba. Si faltan parámetros o ventas,
+            aparece «Sin estimación». El administrador configura plazo y reserva en
+            «Comprar a tiempo».
+          </p>
+        </section>`
+      : ''}
     <p class="form-error" role="alert"></p>
     <div class="form-actions">
       <button type="button" data-action="close">Cancelar</button

@@ -1,3 +1,4 @@
+import { withAutomaticMinimum } from '../investigacion-operativa/minimo-producto.js';
 import { IMAGE_TABLES } from '../services/images.js';
 import {
   validateInventoryParameters,
@@ -29,7 +30,7 @@ export class DemoStore {
     this.user = null;
   }
   async load() {
-    return structuredClone(this.data);
+    return withAutomaticMinimum(structuredClone(this.data));
   }
   async loginDemo(userId) {
     this.user = this.data.perfiles_usuarios.find((u) => u.id === userId && u.activo);
@@ -58,10 +59,9 @@ export class DemoStore {
     }
     const data = structuredClone(this.data);
     const record = { ...values, id: existingId || id() };
-    if (table === 'productos' && record.stock_minimo == null)
-      record.stock_minimo =
-        data.productos.find((p) => p.id === existingId)?.stock_minimo ?? 0;
     if (table === 'productos') {
+      // Ignorar cualquier mínimo manual recibido: se deriva al cargar el producto.
+      delete record.stock_minimo;
       assert(
         record.codigo?.trim() && record.codigo.length <= 30 && record.nombre?.trim(),
         'Ingresa nombre y código (máximo 30 caracteres).',
@@ -69,10 +69,6 @@ export class DemoStore {
       assert(
         Number.isFinite(record.precio_venta) && record.precio_venta > 0,
         'Precio de venta inválido.',
-      );
-      assert(
-        Number.isSafeInteger(record.stock_minimo) && record.stock_minimo >= 0,
-        'Mínimo inválido.',
       );
       assert(
         data.categorias_productos.some((c) => c.id === record.categoria_id),

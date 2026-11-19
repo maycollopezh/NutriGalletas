@@ -89,7 +89,6 @@ export function seedDemo() {
     categoria_id: data.categorias_productos[i % 3].id,
     presentacion: 'Paquete de 100 g',
     precio_venta: [6, 8, 7.5, 7, 8.5, 7][i],
-    stock_minimo: 15,
     activo: true,
   }));
   const admin = data.perfiles_usuarios[0];

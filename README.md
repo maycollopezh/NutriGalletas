@@ -123,5 +123,6 @@ Netlify publica únicamente `index.html` y `src/`, preparados por `scripts/build
 - [Publicación en GitHub y Netlify](docs/configuracion/GITHUB_NETLIFY.md).
 - [IA y WhatsApp](docs/ia/IMPLEMENTACION.md).
 - [Credenciales y configuración](docs/configuracion/CREDENCIALES.md).
+- [Stock mínimo automático y plazo del proveedor](docs/configuracion/STOCK_MINIMO_AUTOMATICO.md).
 
 Las claves privadas permanecen en los servicios correspondientes, fuera del navegador y del repositorio. El QR conserva su ruta `src/assets/qr-ganadero.png`. Los roles existentes siguen siendo administrador, cajero y almacén. CEO/IT/usuario común permanece pendiente. No hay delivery, fabricación ni facturación fiscal.

@@ -1,3 +1,4 @@
+import { withAutomaticMinimum } from '../investigacion-operativa/minimo-producto.js';
 import { IMAGE_BUCKET, IMAGE_TABLES } from './images.js';
 import { validateInventoryParameters } from '../investigacion-operativa/plan-inventario.js';
 import { config } from '../configuracion/publica.js';
@@ -158,7 +159,7 @@ export class CloudStore {
     records.forEach((r) => {
       r.imagen_url = this.photoCache.get(r.imagen_ruta)?.url || null;
     });
-    return data;
+    return withAutomaticMinimum(data);
   }
   async startUpdates(callback) {
     this.stopUpdates();
@@ -186,6 +187,11 @@ export class CloudStore {
   }
   async save(table, values, existingId, imageChange) {
     if (table === 'gastos') throw new Error('El registro de gastos está deshabilitado.');
+    // El umbral es una lectura calculada; no se escribe el campo SQL de compatibilidad.
+    if (table === 'productos') {
+      values = { ...values };
+      delete values.stock_minimo;
+    }
     if (table === 'perfiles_usuarios')
       return this.action(existingId ? 'update_user' : 'create_user', {
         ...values,

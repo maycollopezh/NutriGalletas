@@ -104,7 +104,7 @@ export function planningView(data, user, search = '') {
                       ? 'Promedio de ' + r.historyDays + ' días completos'
                       : 'Estimación ingresada'}</small
                   ><span
-                    >Mínimo para reponer:
+                    >Stock mínimo automático:
                     <b
                       >${r.reorder == null
                         ? 'Sin estimación'
@@ -275,7 +275,7 @@ export function planningForm(data, id, useExample = false) {
             1,
             365,
             1,
-            'Desde que pides hasta que recibes los productos.',
+            'Plazo configurado por el administrador según lo acordado con el proveedor. No se mide automáticamente; revisa los supuestos del ejemplo.',
           )}${input(
             'stock_seguridad',
             'Paquetes de reserva',
