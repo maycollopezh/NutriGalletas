@@ -1,3 +1,4 @@
+import { auditView } from './features/auditoria/registro.js';
 import {
   purchasePricingFields,
   syncPurchasePricing,
@@ -65,6 +66,7 @@ let categoryFilter = '',
 let from = shiftDay(-6),
   to = today();
 const titles = {
+  auditoria: 'Auditoría',
   atencion: 'Atención de WhatsApp',
   pedidos: 'Pedidos para recoger',
   asistente: 'Asistente',
@@ -121,6 +123,7 @@ function matches(...values) {
 }
 function icon(type) {
   const paths = {
+    auditoria: '<path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/>',
     flecha: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
     mas: '<path d="M12 5v14M5 12h14"/>',
     check: '<path d="m5 12 4 4L19 6"/>',
@@ -274,7 +277,9 @@ function pageHead(button = '') {
       <span class="section-kicker"
         >${page === 'dashboard'
           ? 'EL PULSO DE TU TIENDA'
-          : ['productos', 'categorias', 'proveedores', 'usuarios'].includes(page)
+          : ['productos', 'categorias', 'proveedores', 'usuarios', 'auditoria'].includes(
+                page,
+              )
             ? 'ADMINISTRACIÓN'
             : 'OPERACIÓN DIARIA'}</span
       >
@@ -432,7 +437,7 @@ function render() {
         'atencion',
       ],
     ],
-    ['ORGANIZACIÓN', ['productos', 'categorias', 'proveedores', 'usuarios']],
+    ['ORGANIZACIÓN', ['productos', 'categorias', 'proveedores', 'usuarios', 'auditoria']],
   ];
   app.innerHTML = /* HTML */ `<div class="shell" data-view="${page}">
     <button class="nav-veil" data-action="menu" aria-label="Cerrar menú"></button>
@@ -1742,13 +1747,15 @@ function sideEditor(title, body) {
 }
 function composedView() {
   let body =
-    page === 'atencion'
-      ? whatsappInboxView(store, user)
-      : page === 'pedidos'
-        ? ordersView(store, user)
-        : page === 'asistente'
-          ? assistantView(store, user)
-          : views[page]();
+    page === 'auditoria'
+      ? auditView(store, user, data.perfiles_usuarios)
+      : page === 'atencion'
+        ? whatsappInboxView(store, user)
+        : page === 'pedidos'
+          ? ordersView(store, user)
+          : page === 'asistente'
+            ? assistantView(store, user)
+            : views[page]();
   if (
     page === 'planificacion' &&
     user.rol === 'administrador' &&
@@ -1968,6 +1975,7 @@ document.addEventListener('click', async (event) => {
       sideRecord = null;
       expandedSale = '';
       page = button.dataset.page;
+      if (canAccess(user, page)) store.auditNavigation?.(page);
       search = '';
       categoryFilter = '';
       inventoryFilter = 'all';
@@ -1976,6 +1984,12 @@ document.addEventListener('click', async (event) => {
       return;
     }
     const action = button.dataset.action;
+    if (
+      action &&
+      (/(?:detail|view|expand)/.test(action) ||
+        ['product-lots', 'receipt', 'print'].includes(action))
+    )
+      store.auditNavigation?.(page, 'CONSULTAR_DETALLE');
     if (action === 'permissions') {
       openModal(
         'Permisos por tarea',

@@ -194,6 +194,7 @@ document.addEventListener(
     event.preventDefault();
     event.stopImmediatePropagation();
     if (button.dataset.wa === 'ycloud') {
+      store.auditNavigation?.('atencion', 'ABRIR_YCLOUD');
       window.open(ycloud, '_blank', 'noopener,noreferrer');
       notice =
         'Busca el número +' +

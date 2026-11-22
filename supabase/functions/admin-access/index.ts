@@ -197,11 +197,12 @@ Deno.serve(async (req) => {
       });
       if (created.error || !created.data.user)
         throw new Error('No se pudo crear la cuenta. Revisa si el correo ya existe.');
-      const saved = await admin
-        .from('perfiles_usuarios')
-        .insert({ ...profile, id: created.data.user.id })
-        .select()
-        .single();
+      const saved = await admin.rpc('guardar_perfil_auditado', {
+        p_actor: verified.user.id,
+        p_id: created.data.user.id,
+        p_perfil: profile,
+        p_nuevo: true,
+      });
       if (saved.error) {
         await admin.auth.admin.deleteUser(created.data.user.id);
         throw new Error('No se pudo guardar el perfil.');
@@ -243,12 +244,12 @@ Deno.serve(async (req) => {
         throw new Error(
           'El correo de una cuenta existente no puede cambiarse desde este formulario.',
         );
-      const saved = await admin
-        .from('perfiles_usuarios')
-        .update(profile)
-        .eq('id', body.user_id)
-        .select()
-        .single();
+      const saved = await admin.rpc('guardar_perfil_auditado', {
+        p_actor: verified.user.id,
+        p_id: body.user_id,
+        p_perfil: profile,
+        p_nuevo: false,
+      });
       check(saved.error);
       return reply(saved.data);
     }

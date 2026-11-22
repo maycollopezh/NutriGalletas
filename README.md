@@ -114,6 +114,8 @@ Netlify publica únicamente `index.html` y `src/`, preparados por `scripts/build
 
 ## Documentación
 
+- [Auditoría de todos los usuarios y descarga de .log](docs/arquitectura/AUDITORIA.md).
+
 - [Guía técnica para exponer](docs/arquitectura/GUIA_TECNICA_EXPOSICION.md).
 - [Modelos de inventario](docs/arquitectura/MODELOS_INVENTARIO.md).
 - [Modelo relacional](docs/arquitectura/MODELO_RELACIONAL.md).

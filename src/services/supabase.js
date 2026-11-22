@@ -13,6 +13,19 @@ export class CloudStore {
     store.client = createClient(config.supabaseUrl, config.supabasePublishableKey);
     return store;
   }
+  // Navigation is informative telemetry. Confirmed changes are captured by SQL triggers.
+  async auditNavigation(module, action = 'VISITAR_PANTALLA') {
+    if (!this.user) return;
+    try {
+      const { error } = await this.client.rpc('registrar_evento_interfaz', {
+        p_modulo: module,
+        p_accion: action,
+      });
+      if (error) console.warn('No se pudo registrar el evento de navegación.');
+    } catch {
+      console.warn('No se pudo registrar el evento de navegación.');
+    }
+  }
   async action(action, values = {}) {
     const { data, error } = await this.client.functions.invoke('admin-access', {
       body: { action, ...values },

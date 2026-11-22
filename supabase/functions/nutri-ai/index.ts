@@ -953,14 +953,17 @@ Deno.serve(async (req) => {
       ) {
         if (body.action !== 'estado_atencion' && phone(body.telefono) === adminPhone)
           throw Error('Acceso denegado');
-        if (body.action !== 'estado_atencion')
-          await publicRpc(
-            phone(body.telefono),
-            body.action === 'pausar_cliente' ? 'humano' : 'reanudar',
-            {
+        if (body.action !== 'estado_atencion') {
+          const audit = await admin.rpc('atencion_whatsapp_auditada', {
+            p_actor: user,
+            p_telefono: phone(body.telefono),
+            p_accion: body.action === 'pausar_cliente' ? 'humano' : 'reanudar',
+            p_datos: {
               mensaje: 'Atención iniciada manualmente por el administrador desde la web.',
             },
-          );
+          });
+          if (audit.error) throw Error('No se pudo actualizar la atención de WhatsApp.');
+        }
         const inbox = await admin.rpc('ia_bandeja_whatsapp');
         if (inbox.error) throw Error('No se pudo cargar Atención de WhatsApp.');
         output = inbox.data;

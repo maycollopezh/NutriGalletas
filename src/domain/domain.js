@@ -17,6 +17,7 @@ export const PERMISSIONS = {
     'asistente',
     'pedidos',
     'atencion',
+    'auditoria',
   ],
   cajero: ['productos', 'ventas', 'pedidos'],
   almacen: [
